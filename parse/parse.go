@@ -6,7 +6,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
+
+	"github.com/gracew/widget-proxy/config"
+	"github.com/pkg/errors"
 )
 
 type CreateRes struct {
@@ -21,7 +25,11 @@ type ListRes struct {
 }
 
 func GetUserId(parseToken string) (string, error) {
-	req, err := http.NewRequest("GET", "http://localhost:1337/parse/users/me", nil)
+	parseURL, err := parseURL("users/me")
+	if err != nil {
+		return "", err
+	}
+	req, err := http.NewRequest("GET", parseURL, nil)
 	if err != nil {
 		return "", err
 	}
@@ -30,23 +38,26 @@ func GetUserId(parseToken string) (string, error) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "failed to fetch information for current user")
 	}
 	var parseRes CreateRes
 	err = json.NewDecoder(res.Body).Decode(&parseRes)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "failed to json decode response")
 	}
 	return parseRes.ObjectID, nil
 }
 
 func CreateObject(apiID string, env string, req map[string]interface{}) (*CreateRes, error) {
-	// TODO(gracew): don't hardcode this
+	parseURL, err := parseURL(fmt.Sprintf("classes/%s", parseClassName(apiID, env)))
+	if err != nil {
+		return nil, err
+	}
 	marshaled, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
-	parseReq, err := http.NewRequest("POST", "http://localhost:1337/parse/classes/"+parseClassName(apiID, env), bytes.NewReader(marshaled))
+	parseReq, err := http.NewRequest("POST", parseURL, bytes.NewReader(marshaled))
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +74,7 @@ func CreateObject(apiID string, env string, req map[string]interface{}) (*Create
 		return nil, err
 	}
 
-	var parseRes CreateRes;
+	var parseRes CreateRes
 	err = json.Unmarshal(bytes, &parseRes)
 	if err != nil {
 		return nil, err
@@ -72,7 +83,11 @@ func CreateObject(apiID string, env string, req map[string]interface{}) (*Create
 }
 
 func GetObject(apiID string, env string, objectID string) (*ObjectRes, error) {
-	req, err := http.NewRequest("GET", "http://localhost:1337/parse/classes/"+parseClassName(apiID, env)+"/"+objectID, nil)
+	parseURL, err := parseURL(fmt.Sprintf("classes/%s/%s", parseClassName(apiID, env), objectID))
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("GET", parseURL, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -88,7 +103,7 @@ func GetObject(apiID string, env string, objectID string) (*ObjectRes, error) {
 		return nil, err
 	}
 
-	var parseRes ObjectRes;
+	var parseRes ObjectRes
 	err = json.Unmarshal(bytes, &parseRes)
 	if err != nil {
 		return nil, err
@@ -97,8 +112,12 @@ func GetObject(apiID string, env string, objectID string) (*ObjectRes, error) {
 }
 
 func ListObjects(apiID string, env string, pageSize string) (*ListRes, error) {
+	parseURL, err := parseURL(fmt.Sprintf("classes/%s", parseClassName(apiID, env)))
+	if err != nil {
+		return nil, err
+	}
 	data := "limit=" + pageSize
-	req, err := http.NewRequest("GET", "http://localhost:1337/parse/classes/"+parseClassName(apiID, env), strings.NewReader(data))
+	req, err := http.NewRequest("GET", parseURL, strings.NewReader(data))
 	if err != nil {
 		panic(err)
 	}
@@ -114,13 +133,25 @@ func ListObjects(apiID string, env string, pageSize string) (*ListRes, error) {
 	if err != nil {
 		return nil, err
 	}
-	var parseRes ListRes;
+	var parseRes ListRes
 	err = json.Unmarshal(bytes, &parseRes)
 	if err != nil {
 		return nil, err
 	}
 
 	return &parseRes, nil
+}
+
+func parseURL(path string) (string, error) {
+	parseURL, err := url.Parse(config.ParseURL)
+	if err != nil {
+		return "", errors.Wrapf(err, "could not parse PARSE_URL as URL: %s", config.ParseURL)
+	}
+	pathURL, err := url.Parse(path)
+	if err != nil {
+		return "", errors.Wrapf(err, "could not parse path as URL: %s", path)
+	}
+	return parseURL.ResolveReference(pathURL).String(), nil
 }
 
 func parseClassName(apiID string, env string) string {

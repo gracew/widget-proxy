@@ -12,6 +12,9 @@ import (
 // Auth reads the auth specification from a local file.
 func Auth(apiID string) (*model.Auth, error) {
 	authPath := os.Getenv(("AUTH_PATH"))
+	if authPath == "" {
+		authPath = "/app/auth.json"
+	}
 	bytes, err := ioutil.ReadFile(authPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read auth file '%s'", authPath)
