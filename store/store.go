@@ -10,7 +10,7 @@ import (
 )
 
 // Auth reads the auth specification from a local file.
-func Auth(apiID string) (*model.Auth, error) {
+func Auth() (*model.Auth, error) {
 	authPath := os.Getenv(("AUTH_PATH"))
 	if authPath == "" {
 		authPath = "/app/auth.json"

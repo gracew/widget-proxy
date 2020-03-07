@@ -25,8 +25,6 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// execute beforeSave logic
-	vars := mux.Vars(r)
-	apiID := vars["apiID"]
 
 	// add createdBy to the original req
 	var originalReq map[string]interface{}
@@ -37,7 +35,7 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 	originalReq["createdBy"] = userID
 
 	// delegate to parse
-	res, err := parse.CreateObject(apiID, vars["env"], originalReq)
+	res, err := parse.CreateObject(originalReq)
 	if err != nil {
 		panic(err)
 	}
@@ -64,14 +62,14 @@ func ReadHandler(w http.ResponseWriter, r *http.Request) {
 
 	// delegate to parse
 	vars := mux.Vars(r)
-	res, err := parse.GetObject(vars["apiID"], vars["env"], vars["id"])
+	res, err := parse.GetObject(vars["id"])
 	if err != nil {
 		panic(err)
 	}
 
 	// fetch the authorization policy
 	// TODO(gracew): parallelize some of these requests
-	auth, err := store.Auth(vars["apiID"])
+	auth, err := store.Auth()
 	if err != nil {
 		panic(err)
 	}
@@ -107,15 +105,14 @@ func ListHandler(w http.ResponseWriter, r *http.Request) {
 	if ok && len(pageSizes[0]) >= 1 {
 		pageSize = pageSizes[0]
 	}
-	vars := mux.Vars(r)
-	res, err := parse.ListObjects(vars["apiID"], vars["env"], pageSize)
+	res, err := parse.ListObjects(pageSize)
 	if err != nil {
 		panic(err)
 	}
 
 	// fetch the authorization policy
 	// TODO(gracew): parallelize some of these requests
-	auth, err := store.Auth(vars["apiID"])
+	auth, err := store.Auth()
 	if err != nil {
 		panic(err)
 	}

@@ -19,9 +19,9 @@ func main() {
 
 	// individual API routes
 	r := mux.NewRouter()
-	r.HandleFunc("/apis/{apiID}/{env}", handlers.CreateHandler).Methods("POST", "OPTIONS")
-	r.HandleFunc("/apis/{apiID}/{env}/{id}", handlers.ReadHandler).Methods("GET", "OPTIONS")
-	r.HandleFunc("/apis/{apiID}/{env}", handlers.ListHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc("/", handlers.CreateHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc("/{id}", handlers.ReadHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc("/", handlers.ListHandler).Methods("GET", "OPTIONS")
 	// TODO(gracew): remove cors later
 	r.Use(mux.CORSMethodMiddleware(r))
 	http.Handle("/", r)

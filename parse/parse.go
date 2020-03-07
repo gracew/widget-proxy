@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/gracew/widget-proxy/config"
@@ -48,8 +49,8 @@ func GetUserId(parseToken string) (string, error) {
 	return parseRes.ObjectID, nil
 }
 
-func CreateObject(apiID string, env string, req map[string]interface{}) (*CreateRes, error) {
-	parseURL, err := parseURL(fmt.Sprintf("classes/%s", parseClassName(apiID, env)))
+func CreateObject(req map[string]interface{}) (*CreateRes, error) {
+	parseURL, err := parseURL(fmt.Sprintf("classes/%s", parseClassName()))
 	if err != nil {
 		return nil, err
 	}
@@ -82,8 +83,8 @@ func CreateObject(apiID string, env string, req map[string]interface{}) (*Create
 	return &parseRes, nil
 }
 
-func GetObject(apiID string, env string, objectID string) (*ObjectRes, error) {
-	parseURL, err := parseURL(fmt.Sprintf("classes/%s/%s", parseClassName(apiID, env), objectID))
+func GetObject(objectID string) (*ObjectRes, error) {
+	parseURL, err := parseURL(fmt.Sprintf("classes/%s/%s", parseClassName(), objectID))
 	if err != nil {
 		return nil, err
 	}
@@ -111,8 +112,8 @@ func GetObject(apiID string, env string, objectID string) (*ObjectRes, error) {
 	return &parseRes, nil
 }
 
-func ListObjects(apiID string, env string, pageSize string) (*ListRes, error) {
-	parseURL, err := parseURL(fmt.Sprintf("classes/%s", parseClassName(apiID, env)))
+func ListObjects(pageSize string) (*ListRes, error) {
+	parseURL, err := parseURL(fmt.Sprintf("classes/%s", parseClassName()))
 	if err != nil {
 		return nil, err
 	}
@@ -154,8 +155,9 @@ func parseURL(path string) (string, error) {
 	return parseURL.ResolveReference(pathURL).String(), nil
 }
 
-func parseClassName(apiID string, env string) string {
+func parseClassName() string {
+	deployID := os.Getenv("DEPLOY_ID")
 	// parse class names cannot start with numbers or contain dashes
-	return fmt.Sprintf("w%s_%s", strings.Replace(apiID, "-", "", -1), env)
+	return fmt.Sprintf("w%s", strings.Replace(deployID, "-", "", -1))
 
 }
