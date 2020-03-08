@@ -1,6 +1,9 @@
 FROM python:3.8-slim
 
+RUN pip install Flask==1.1.1
 ADD . /app/
 WORKDIR /app
 
-ENTRYPOINT [ "python", "entrypoint.py" ]
+ENV FLASK_APP app.py
+EXPOSE 5000
+ENTRYPOINT [ "flask", "run", "--host", "0.0.0.0" ]
