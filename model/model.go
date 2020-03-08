@@ -63,3 +63,38 @@ func (e AuthenticationType) IsValid() bool {
 func (e AuthenticationType) String() string {
 	return string(e)
 }
+
+type CustomLogic struct {
+	APIID         string        `json:"apiID"`
+	OperationType OperationType `json:"operationType"`
+	BeforeSave    *string       `json:"beforeSave"`
+	AfterSave     *string       `json:"afterSave"`
+}
+
+type OperationType string
+
+const (
+	OperationTypeCreate OperationType = "CREATE"
+	OperationTypeUpdate OperationType = "UPDATE"
+	OperationTypeRead   OperationType = "READ"
+	OperationTypeList   OperationType = "LIST"
+)
+
+var AllOperationType = []OperationType{
+	OperationTypeCreate,
+	OperationTypeUpdate,
+	OperationTypeRead,
+	OperationTypeList,
+}
+
+func (e OperationType) IsValid() bool {
+	switch e {
+	case OperationTypeCreate, OperationTypeUpdate, OperationTypeRead, OperationTypeList:
+		return true
+	}
+	return false
+}
+
+func (e OperationType) String() string {
+	return string(e)
+}

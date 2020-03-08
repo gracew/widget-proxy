@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/gracew/widget-proxy/config"
 	"github.com/gracew/widget-proxy/model"
 	"github.com/gracew/widget-proxy/parse"
 	"github.com/gracew/widget-proxy/store"
@@ -25,17 +26,37 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// execute beforeSave logic
+	customLogic, err := store.CustomLogic(config.CustomLogicPath)
+	var createCustomLogic *model.CustomLogic
+	for _, el := range customLogic {
+		if el.OperationType == model.OperationTypeCreate {
+			createCustomLogic = &el
+		}
+	}
+
+	var parseReq map[string]interface{}
+
+	if createCustomLogic == nil || createCustomLogic.BeforeSave == nil {
+		err = json.NewDecoder(r.Body).Decode(&parseReq)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		res, err := http.Post(config.CustomLogicUrl, "application/json", r.Body)
+		if err != nil {
+			panic(err)
+		}
+		err = json.NewDecoder(res.Body).Decode(&parseReq)
+		if err != nil {
+			panic(err)
+		}
+	}
 
 	// add createdBy to the original req
-	var originalReq map[string]interface{}
-	err = json.NewDecoder(r.Body).Decode(&originalReq)
-	if err != nil {
-		panic(err)
-	}
-	originalReq["createdBy"] = userID
+	parseReq["createdBy"] = userID
 
 	// delegate to parse
-	res, err := parse.CreateObject(originalReq)
+	res, err := parse.CreateObject(parseReq)
 	if err != nil {
 		panic(err)
 	}
@@ -69,7 +90,7 @@ func ReadHandler(w http.ResponseWriter, r *http.Request) {
 
 	// fetch the authorization policy
 	// TODO(gracew): parallelize some of these requests
-	auth, err := store.Auth()
+	auth, err := store.Auth(config.AuthPath)
 	if err != nil {
 		panic(err)
 	}
@@ -112,7 +133,7 @@ func ListHandler(w http.ResponseWriter, r *http.Request) {
 
 	// fetch the authorization policy
 	// TODO(gracew): parallelize some of these requests
-	auth, err := store.Auth()
+	auth, err := store.Auth(config.AuthPath)
 	if err != nil {
 		panic(err)
 	}
