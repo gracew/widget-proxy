@@ -42,7 +42,7 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 	} else {
-		res, err := http.Post(config.CustomLogicUrl + "beforeSave", "application/json", r.Body)
+		res, err := http.Post(config.CustomLogicUrl + "beforeCreate", "application/json", r.Body)
 		if err != nil {
 			panic(err)
 		}

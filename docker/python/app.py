@@ -1,29 +1,23 @@
 import json
+import os
 
 from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-with open("./customLogic.json") as f:
-    custom_logic = json.loads(f.read())
-    for el in custom_logic:
-        if el["operationType"] == "CREATE":
-            if el["beforeSave"]:
-                with open("./before_save.py", "w+") as f_out:
-                    f_out.write(el["beforeSave"])
+BEFORE_CREATE = "./customLogic/beforeCreate.py"
+AFTER_CREATE = "./customLogic/afterCreate.py"
 
-                @app.route("/beforeSave", methods=["POST"])
-                def before_save():
-                    from before_save import before_save
-                    output = before_save(request.get_json())
-                    return jsonify(output)
+if os.path.exists(BEFORE_CREATE):
+    @app.route("/beforeCreate", methods=["POST"])
+    def beforeCreate():
+        from customLogic.beforeCreate import beforeCreate
+        output = beforeCreate(request.get_json())
+        return jsonify(output)
 
-            if el["afterSave"]:
-                with open("./after_save.py", "w+") as f_out:
-                    f_out.write(el["afterSave"])
-
-                @app.route("/afterSave", methods=["POST"])
-                def after_save():
-                    from after_save import after_save
-                    output = after_save(request.get_json())
-                    return jsonify(output)
+if os.path.exists(AFTER_CREATE):
+    @app.route("/afterCreate", methods=["POST"])
+    def afterCreate():
+        from customLogic.afterCreate import afterCreate
+        output = afterCreate(request.get_json())
+        return jsonify(output)

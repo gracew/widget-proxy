@@ -5,5 +5,5 @@ ADD . /app/
 WORKDIR /app
 
 ENV FLASK_APP app.py
-EXPOSE 5000
+EXPOSE 8080
 ENTRYPOINT [ "flask", "run", "--host", "0.0.0.0", "--port", "8080" ]
