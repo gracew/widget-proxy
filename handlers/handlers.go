@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 
@@ -9,7 +10,55 @@ import (
 	"github.com/gracew/widget-proxy/model"
 	"github.com/gracew/widget-proxy/parse"
 	"github.com/gracew/widget-proxy/store"
+	"github.com/pkg/errors"
 )
+
+func applyBeforeCustomLogic(r *http.Request, customLogic *model.CustomLogic) (map[string]interface{}, error) {
+	var result map[string]interface{}
+
+	if customLogic == nil || customLogic.Before == nil {
+		err := json.NewDecoder(r.Body).Decode(&result)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not decode request as json")
+		}
+		return result, nil
+	}
+
+	res, err := http.Post(config.CustomLogicUrl + "beforeCreate", "application/json", r.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "request to custom logic endpoint failed")
+	}
+
+	err = json.NewDecoder(res.Body).Decode(&result)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not decode response from custom logic endpoint")
+	}
+	return result, nil
+}
+
+func applyAfterCustomLogic(w http.ResponseWriter, input *parse.CreateRes, customLogic *model.CustomLogic) error {
+	if customLogic == nil || customLogic.After == nil {
+		err := json.NewEncoder(w).Encode(input)
+		if err != nil {
+			return errors.Wrap(err, "could not encode response")
+		}
+		return nil
+	}
+
+	inputBytes, err := json.Marshal(input)
+	if err != nil {
+		return errors.Wrap(err, "could not marshal custom logic input")
+	}
+	afterRes, err := http.Post(config.CustomLogicUrl + "afterCreate", "application/json", bytes.NewReader(inputBytes))
+	if err != nil {
+		return errors.Wrap(err, "request to custom logic endpoint failed")
+	}
+	err = json.NewEncoder(w).Encode(afterRes)
+	if err != nil {
+		return errors.Wrap(err, "could not encode response")
+	}
+	return nil
+}
 
 func CreateHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -25,7 +74,6 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	// execute beforeSave logic
 	customLogic, err := store.CustomLogic(config.CustomLogicPath)
 	var createCustomLogic *model.CustomLogic
 	for _, el := range customLogic {
@@ -34,22 +82,9 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var parseReq map[string]interface{}
-
-	if createCustomLogic == nil || createCustomLogic.BeforeSave == nil {
-		err = json.NewDecoder(r.Body).Decode(&parseReq)
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		res, err := http.Post(config.CustomLogicUrl + "beforeCreate", "application/json", r.Body)
-		if err != nil {
-			panic(err)
-		}
-		err = json.NewDecoder(res.Body).Decode(&parseReq)
-		if err != nil {
-			panic(err)
-		}
+	parseReq, err := applyBeforeCustomLogic(r, createCustomLogic)
+	if err != nil {
+		panic(err)
 	}
 
 	// add createdBy to the original req
@@ -61,10 +96,7 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	err = json.NewEncoder(w).Encode(res)
-	if err != nil {
-		panic(err)
-	}
+	applyAfterCustomLogic(w, res, createCustomLogic)
 }
 
 func ReadHandler(w http.ResponseWriter, r *http.Request) {

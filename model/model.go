@@ -67,8 +67,8 @@ func (e AuthenticationType) String() string {
 type CustomLogic struct {
 	APIID         string        `json:"apiID"`
 	OperationType OperationType `json:"operationType"`
-	BeforeSave    *string       `json:"beforeSave"`
-	AfterSave     *string       `json:"afterSave"`
+	Before    *string       `json:"before"`
+	After     *string       `json:"after"`
 }
 
 type OperationType string
