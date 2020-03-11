@@ -9,8 +9,11 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gracew/widget-proxy/config"
+	"github.com/gracew/widget-proxy/metrics"
+	"github.com/gracew/widget-proxy/model"
 	"github.com/pkg/errors"
 )
 
@@ -50,6 +53,14 @@ func GetUserId(parseToken string) (string, error) {
 }
 
 func CreateObject(req map[string]interface{}) (*CreateRes, error) {
+	start := time.Now()
+	res, err := createObject(req)
+	end := time.Now()
+	metrics.DatabaseSummary.WithLabelValues(model.OperationTypeCreate.String()).Observe(float64(end.Sub(start).Milliseconds()))
+	return res, err
+}
+
+func createObject(req map[string]interface{}) (*CreateRes, error) {
 	parseURL, err := parseURL(fmt.Sprintf("classes/%s", parseClassName()))
 	if err != nil {
 		return nil, err
@@ -84,6 +95,14 @@ func CreateObject(req map[string]interface{}) (*CreateRes, error) {
 }
 
 func GetObject(objectID string) (*ObjectRes, error) {
+	start := time.Now()
+	res, err := getObject(objectID)
+	end := time.Now()
+	metrics.DatabaseSummary.WithLabelValues(model.OperationTypeRead.String()).Observe(float64(end.Sub(start).Milliseconds()))
+	return res, err
+}
+
+func getObject(objectID string) (*ObjectRes, error) {
 	parseURL, err := parseURL(fmt.Sprintf("classes/%s/%s", parseClassName(), objectID))
 	if err != nil {
 		return nil, err
@@ -113,6 +132,14 @@ func GetObject(objectID string) (*ObjectRes, error) {
 }
 
 func ListObjects(pageSize string) (*ListRes, error) {
+	start := time.Now()
+	res, err := listObjects(pageSize)
+	end := time.Now()
+	metrics.DatabaseSummary.WithLabelValues(model.OperationTypeList.String()).Observe(float64(end.Sub(start).Milliseconds()))
+	return res, err
+}
+
+func listObjects(pageSize string) (*ListRes, error) {
 	parseURL, err := parseURL(fmt.Sprintf("classes/%s", parseClassName()))
 	if err != nil {
 		return nil, err

@@ -6,5 +6,6 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/mux v1.7.4
 	github.com/pkg/errors v0.8.1
+	github.com/prometheus/client_golang v1.5.0
 	github.com/stretchr/testify v1.5.1
 )
