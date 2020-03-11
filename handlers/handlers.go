@@ -154,7 +154,7 @@ func applyBeforeCustomLogic(r *http.Request, customLogic *model.CustomLogic) (ma
 	start := time.Now()
 	res, err := applyBeforeCustomLogicUninstrumented(r, customLogic)
 	end := time.Now()
-	metrics.CustomLogicSummary.WithLabelValues(customLogic.OperationType.String(), "before").Observe(float64(end.Sub(start).Milliseconds()))
+	metrics.CustomLogicSummary.WithLabelValues(customLogic.OperationType.String(), "before").Observe(end.Sub(start).Seconds())
 	return res, err
 }
 
@@ -185,7 +185,7 @@ func applyAfterCustomLogic(w http.ResponseWriter, input *parse.CreateRes, custom
 	start := time.Now()
 	err := applyAfterCustomLogicUninstrumented(w, input, customLogic)
 	end := time.Now()
-	metrics.CustomLogicSummary.WithLabelValues(customLogic.OperationType.String(), "after").Observe(float64(end.Sub(start).Milliseconds()))
+	metrics.CustomLogicSummary.WithLabelValues(customLogic.OperationType.String(), "after").Observe(end.Sub(start).Seconds())
 	return err
 }
 

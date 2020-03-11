@@ -56,7 +56,7 @@ func CreateObject(req map[string]interface{}) (*CreateRes, error) {
 	start := time.Now()
 	res, err := createObject(req)
 	end := time.Now()
-	metrics.DatabaseSummary.WithLabelValues(model.OperationTypeCreate.String()).Observe(float64(end.Sub(start).Milliseconds()))
+	metrics.DatabaseSummary.WithLabelValues(model.OperationTypeCreate.String()).Observe(end.Sub(start).Seconds())
 	return res, err
 }
 
@@ -98,7 +98,7 @@ func GetObject(objectID string) (*ObjectRes, error) {
 	start := time.Now()
 	res, err := getObject(objectID)
 	end := time.Now()
-	metrics.DatabaseSummary.WithLabelValues(model.OperationTypeRead.String()).Observe(float64(end.Sub(start).Milliseconds()))
+	metrics.DatabaseSummary.WithLabelValues(model.OperationTypeRead.String()).Observe(end.Sub(start).Seconds())
 	return res, err
 }
 
@@ -135,7 +135,7 @@ func ListObjects(pageSize string) (*ListRes, error) {
 	start := time.Now()
 	res, err := listObjects(pageSize)
 	end := time.Now()
-	metrics.DatabaseSummary.WithLabelValues(model.OperationTypeList.String()).Observe(float64(end.Sub(start).Milliseconds()))
+	metrics.DatabaseSummary.WithLabelValues(model.OperationTypeList.String()).Observe(end.Sub(start).Seconds())
 	return res, err
 }
 
