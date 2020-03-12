@@ -39,7 +39,6 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 
 	parseReq, err := applyBeforeCustomLogic(r, createCustomLogic)
 	if err != nil {
-		metrics.CustomLogicErrors.WithLabelValues(model.OperationTypeCreate.String(), "before").Inc()
 		panic(err)
 	}
 
@@ -55,7 +54,6 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = applyAfterCustomLogic(w, res, createCustomLogic)
 	if err != nil {
-		metrics.CustomLogicErrors.WithLabelValues(model.OperationTypeCreate.String(), "after").Inc()
 		panic(err)
 	}
 }
@@ -151,14 +149,6 @@ type unauthorized struct {
 }
 
 func applyBeforeCustomLogic(r *http.Request, customLogic *model.CustomLogic) (map[string]interface{}, error) {
-	start := time.Now()
-	res, err := applyBeforeCustomLogicUninstrumented(r, customLogic)
-	end := time.Now()
-	metrics.CustomLogicSummary.WithLabelValues(customLogic.OperationType.String(), "before").Observe(end.Sub(start).Seconds())
-	return res, err
-}
-
-func applyBeforeCustomLogicUninstrumented(r *http.Request, customLogic *model.CustomLogic) (map[string]interface{}, error) {
 	var result map[string]interface{}
 
 	if customLogic == nil || customLogic.Before == nil {
@@ -169,27 +159,24 @@ func applyBeforeCustomLogicUninstrumented(r *http.Request, customLogic *model.Cu
 		return result, nil
 	}
 
+	start := time.Now()
 	res, err := http.Post(config.CustomLogicUrl + "beforeCreate", "application/json", r.Body)
 	if err != nil {
+		metrics.CustomLogicErrors.WithLabelValues(model.OperationTypeCreate.String(), "before").Inc()
 		return nil, errors.Wrap(err, "request to custom logic endpoint failed")
 	}
+	end := time.Now()
+	metrics.CustomLogicSummary.WithLabelValues(customLogic.OperationType.String(), "before").Observe(end.Sub(start).Seconds())
 
 	err = json.NewDecoder(res.Body).Decode(&result)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode response from custom logic endpoint")
 	}
+
 	return result, nil
 }
 
 func applyAfterCustomLogic(w http.ResponseWriter, input *parse.CreateRes, customLogic *model.CustomLogic) error {
-	start := time.Now()
-	err := applyAfterCustomLogicUninstrumented(w, input, customLogic)
-	end := time.Now()
-	metrics.CustomLogicSummary.WithLabelValues(customLogic.OperationType.String(), "after").Observe(end.Sub(start).Seconds())
-	return err
-}
-
-func applyAfterCustomLogicUninstrumented(w http.ResponseWriter, input *parse.CreateRes, customLogic *model.CustomLogic) error {
 	if customLogic == nil || customLogic.After == nil {
 		err := json.NewEncoder(w).Encode(input)
 		if err != nil {
@@ -202,10 +189,16 @@ func applyAfterCustomLogicUninstrumented(w http.ResponseWriter, input *parse.Cre
 	if err != nil {
 		return errors.Wrap(err, "could not marshal custom logic input")
 	}
+
+	start := time.Now()
 	afterRes, err := http.Post(config.CustomLogicUrl + "afterCreate", "application/json", bytes.NewReader(inputBytes))
 	if err != nil {
+		metrics.CustomLogicErrors.WithLabelValues(model.OperationTypeCreate.String(), "after").Inc()
 		return errors.Wrap(err, "request to custom logic endpoint failed")
 	}
+	end := time.Now()
+	metrics.CustomLogicSummary.WithLabelValues(customLogic.OperationType.String(), "after").Observe(end.Sub(start).Seconds())
+
 	err = json.NewEncoder(w).Encode(afterRes)
 	if err != nil {
 		return errors.Wrap(err, "could not encode response")

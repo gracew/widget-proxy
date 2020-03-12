@@ -10,7 +10,6 @@ import (
 	"github.com/gracew/widget-proxy/handlers"
 	"github.com/gracew/widget-proxy/metrics"
 	"github.com/gracew/widget-proxy/model"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -21,13 +20,6 @@ func main() {
 	if port == "" {
 		port = defaultPort
 	}
-
-	// register metrics
-	prometheus.MustRegister(metrics.RequestSummary)
-	prometheus.MustRegister(metrics.CustomLogicSummary)
-	prometheus.MustRegister(metrics.CustomLogicErrors)
-	prometheus.MustRegister(metrics.DatabaseSummary)
-	prometheus.MustRegister(metrics.DatabaseErrors)
 
 	// individual API routes
 	r := mux.NewRouter()
@@ -48,6 +40,7 @@ type handler = func(w http.ResponseWriter, r *http.Request)
 
 func instrumentedHandler(handler handler, label string) handler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		metrics.RequestCounter.WithLabelValues(label).Inc()
 		start := time.Now()
 		handler(w, r)
 		end := time.Now()
