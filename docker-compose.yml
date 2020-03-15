@@ -1,17 +1,13 @@
 version: "3"
 services:
-  mongo:
-    container_name: mongo
-    image: mongo
-    ports:
-      - 27017:27017
   parse:
     container_name: parse
     image: parseplatform/parse-server
     environment:
       PARSE_SERVER_APPLICATION_ID: appId
       PARSE_SERVER_MASTER_KEY: masterKey
-      PARSE_SERVER_DATABASE_URI: mongodb://mongo:27017/parse
+      PARSE_SERVER_DATABASE_URI: postgres://api-postgres:5432
+      PGUSER: postgres
     ports:
       - 1337:1337
     entrypoint:
