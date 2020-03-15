@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-pg/pg"
 	"github.com/gorilla/mux"
+	"github.com/gracew/widget-proxy/config"
 	"github.com/gracew/widget-proxy/handlers"
 	"github.com/gracew/widget-proxy/metrics"
 	"github.com/gracew/widget-proxy/model"
@@ -23,7 +24,7 @@ func main() {
 		port = defaultPort
 	}
 
-	db := pg.Connect(&pg.Options{User: "postgres"})
+	db := pg.Connect(&pg.Options{User: "postgres", Addr: config.PostgresAddress})
 	defer db.Close()
 	s := store.InstrumentedStore{Delegate: store.PgStore{DB: db}}
 	s.CreateSchema()
