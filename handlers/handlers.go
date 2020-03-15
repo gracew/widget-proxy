@@ -27,8 +27,8 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get the userId
-	dbToken := r.Header["X-Parse-Session-Token"][0]
-	userID, err := user.GetUserId(dbToken)
+	parseToken := r.Header["X-Parse-Session-Token"][0]
+	userID, err := user.GetUserId(parseToken)
 	if err != nil {
 		panic(err)
 	}
@@ -70,8 +70,8 @@ func ReadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get the userId
-	dbToken := r.Header["X-Parse-Session-Token"][0]
-	userID, err := user.GetUserId(dbToken)
+	parseToken := r.Header["X-Parse-Session-Token"][0]
+	userID, err := user.GetUserId(parseToken)
 	if err != nil {
 		panic(err)
 	}
@@ -113,8 +113,8 @@ func ListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get the userId
-	dbToken := r.Header["X-Parse-Session-Token"][0]
-	userID, err := user.GetUserId(dbToken)
+	parseToken := r.Header["X-Parse-Session-Token"][0]
+	userID, err := user.GetUserId(parseToken)
 	if err != nil {
 		panic(err)
 	}
