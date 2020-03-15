@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-pg/pg"
 	"github.com/gorilla/mux"
 	"github.com/gracew/widget-proxy/config"
 	"github.com/gracew/widget-proxy/generated"
@@ -19,7 +18,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-func CreateHandler(w http.ResponseWriter, r *http.Request) {
+type Handlers struct {
+	Store store.Store
+}
+
+func (h Handlers) CreateHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "*")
 	if r.Method == http.MethodOptions {
@@ -47,10 +50,7 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// delegate to db
-	db := pg.Connect(&pg.Options{User: "postgres", Addr: "localhost:5433"})
-	defer db.Close()
-	s := store.Store{DB: db}
-	res, err := s.CreateObject(bytes, userID)
+	res, err := h.Store.CreateObject(bytes, userID)
 	if err != nil {
 		metrics.DatabaseErrors.WithLabelValues(model.OperationTypeCreate.String()).Inc()
 		panic(err)
@@ -62,7 +62,7 @@ func CreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func ReadHandler(w http.ResponseWriter, r *http.Request) {
+func (h Handlers) ReadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "*")
 	if r.Method == http.MethodOptions {
@@ -78,10 +78,7 @@ func ReadHandler(w http.ResponseWriter, r *http.Request) {
 
 	// delegate to db
 	vars := mux.Vars(r)
-	db := pg.Connect(&pg.Options{User: "postgres", Addr: "localhost:5433"})
-	defer db.Close()
-	s := store.Store{DB: db}
-	res, err := s.GetObject(vars["id"])
+	res, err := h.Store.GetObject(vars["id"])
 	if err != nil {
 		metrics.DatabaseErrors.WithLabelValues(model.OperationTypeRead.String()).Inc()
 		panic(err)
@@ -105,7 +102,7 @@ func ReadHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&res)
 }
 
-func ListHandler(w http.ResponseWriter, r *http.Request) {
+func (h Handlers) ListHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "*")
 	if r.Method == http.MethodOptions {
@@ -128,10 +125,7 @@ func ListHandler(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 	}
-	db := pg.Connect(&pg.Options{User: "postgres", Addr: "localhost:5433"})
-	defer db.Close()
-	s := store.Store{DB: db}
-	res, err := s.ListObjects(pageSize)
+	res, err := h.Store.ListObjects(pageSize)
 	if err != nil {
 		metrics.DatabaseErrors.WithLabelValues(model.OperationTypeList.String()).Inc()
 		panic(err)

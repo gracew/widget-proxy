@@ -23,11 +23,16 @@ func main() {
 		port = defaultPort
 	}
 
-	// individual API routes
+	db := pg.Connect(&pg.Options{User: "postgres"})
+	defer db.Close()
+	s := store.InstrumentedStore{Delegate: store.PgStore{DB: db}}
+	s.CreateSchema()
+
 	r := mux.NewRouter()
-	r.HandleFunc("/", instrumentedHandler(handlers.CreateHandler, model.OperationTypeCreate.String())).Methods("POST", "OPTIONS")
-	r.HandleFunc("/{id}", instrumentedHandler(handlers.ReadHandler, model.OperationTypeRead.String())).Methods("GET", "OPTIONS")
-	r.HandleFunc("/", instrumentedHandler(handlers.ListHandler, model.OperationTypeList.String())).Methods("GET", "OPTIONS")
+	h := handlers.Handlers{Store: s}
+	r.HandleFunc("/", instrumentedHandler(h.CreateHandler, model.OperationTypeCreate.String())).Methods("POST", "OPTIONS")
+	r.HandleFunc("/{id}", instrumentedHandler(h.ReadHandler, model.OperationTypeRead.String())).Methods("GET", "OPTIONS")
+	r.HandleFunc("/", instrumentedHandler(h.ListHandler, model.OperationTypeList.String())).Methods("GET", "OPTIONS")
 	// TODO(gracew): remove cors later
 	r.Use(mux.CORSMethodMiddleware(r))
 	http.Handle("/", r)
@@ -36,11 +41,6 @@ func main() {
 
 	log.Printf("api ready at http://localhost:%s/", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
-
-	db := pg.Connect(&pg.Options{User: "postgres"})
-	defer db.Close()
-	s := store.Store{DB: db}
-	s.CreateSchema()
 }
 
 

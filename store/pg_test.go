@@ -14,7 +14,7 @@ type TestInput struct {
 func TestCreateGetObject(t *testing.T) {
 	db := pg.Connect(&pg.Options{User: "postgres", Addr: "localhost:5433"})
 	defer db.Close()
-	s := Store{DB: db}
+	s := PgStore{DB: db}
 
 	err := s.CreateSchema()
 	assert.NoError(t, err)
@@ -36,7 +36,7 @@ func TestCreateGetObject(t *testing.T) {
 func TestListObjects(t *testing.T) {
 	db := pg.Connect(&pg.Options{User: "postgres", Addr: "localhost:5433"})
 	defer db.Close()
-	s := Store{DB: db}
+	s := PgStore{DB: db}
 
 	err := s.CreateSchema()
 	assert.NoError(t, err)
