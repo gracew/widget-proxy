@@ -47,3 +47,8 @@ services:
       - 3001:3000
     volumes:
       - ./docker/grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+  api-postgres:
+    container_name: api-postgres
+    image: postgres:11-alpine
+    ports:
+      - 5433:5432

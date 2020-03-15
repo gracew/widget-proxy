@@ -6,10 +6,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-pg/pg"
 	"github.com/gorilla/mux"
 	"github.com/gracew/widget-proxy/handlers"
 	"github.com/gracew/widget-proxy/metrics"
 	"github.com/gracew/widget-proxy/model"
+	"github.com/gracew/widget-proxy/store"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -34,7 +36,13 @@ func main() {
 
 	log.Printf("api ready at http://localhost:%s/", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
+
+	db := pg.Connect(&pg.Options{User: "postgres"})
+	defer db.Close()
+	s := store.Store{DB: db}
+	s.CreateSchema()
 }
+
 
 type handler = func(w http.ResponseWriter, r *http.Request)
 

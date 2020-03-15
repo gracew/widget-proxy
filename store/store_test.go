@@ -2,68 +2,58 @@ package store
 
 import (
 	"encoding/json"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/gracew/widget-proxy/model"
-	"github.com/pkg/errors"
+	"github.com/go-pg/pg"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAuth(t *testing.T) {
-	createdByAuthPolicy := model.AuthPolicy{
-		Type: model.AuthPolicyTypeCreatedBy,
-	}
-	input := model.Auth{
-		ID:                 "id",
-		APIID:              "apiID",
-		AuthenticationType: model.AuthenticationTypeBuiltIn,
-		ReadPolicy:         &createdByAuthPolicy,
-		WritePolicy:        &createdByAuthPolicy,
-	}
+type TestInput struct {
+	Test string `json:"test"`
+}
+func TestCreateGetObject(t *testing.T) {
+	db := pg.Connect(&pg.Options{User: "postgres", Addr: "localhost:5433"})
+	defer db.Close()
+	s := Store{DB: db}
 
-	path, err := writeTmpFile(input, "auth-")
+	err := s.CreateSchema()
 	assert.NoError(t, err)
 
-	output, err := Auth(path)
+	req := TestInput{Test: "test"}
+	marshaled, err := json.Marshal(req)
 	assert.NoError(t, err)
-	assert.Equal(t, input, *output)
+
+	createRes, err := s.CreateObject(marshaled, "userID")
+	assert.NoError(t, err)
+	assert.Equal(t, req.Test, createRes.Test)
+	assert.Equal(t, "userID", createRes.CreatedBy)
+
+	getRes, err := s.GetObject(createRes.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, createRes, getRes)
 }
 
-func TestCustomLogic(t *testing.T) {
-	beforeSave := "before"
-	afterSave := "after"
-	customLogic1 := model.CustomLogic{
-		APIID:              "apiID",
-		OperationType: model.OperationTypeCreate,
-		BeforeSave: &beforeSave,
-	}
-	customLogic2 := model.CustomLogic{
-		APIID:              "apiID",
-		OperationType: model.OperationTypeRead,
-		AfterSave: &afterSave,
-	}
-	input := []model.CustomLogic{customLogic1, customLogic2}
+func TestListObjects(t *testing.T) {
+	db := pg.Connect(&pg.Options{User: "postgres", Addr: "localhost:5433"})
+	defer db.Close()
+	s := Store{DB: db}
 
-	path, err := writeTmpFile(input, "custom-logic-")
+	err := s.CreateSchema()
 	assert.NoError(t, err)
 
-	output, err := CustomLogic(path)
+	req1 := TestInput{Test: "test"}
+	marshaled, err := json.Marshal(req1)
 	assert.NoError(t, err)
-	assert.Equal(t, input, output)
-}
+	_, err = s.CreateObject(marshaled, "userID")
+	assert.NoError(t, err)
 
-func writeTmpFile(input interface{}, prefix string) (string, error) {
-	file, err := ioutil.TempFile(os.TempDir(), prefix)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to create temp file")
-	}
+	req2 := TestInput{Test: "test"}
+	marshaled, err = json.Marshal(req2)
+	assert.NoError(t, err)
+	_, err = s.CreateObject(marshaled, "userID")
+	assert.NoError(t, err)
 
-	err = json.NewEncoder(file).Encode(input)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to encode object to file")
-	}
-	return filepath.Abs(file.Name())
+	res, err := s.ListObjects(100)
+	assert.NoError(t, err)
+	assert.Greater(t, len(res), 0)
 }
