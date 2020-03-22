@@ -34,6 +34,7 @@ func main() {
 	r.HandleFunc("/", instrumentedHandler(h.CreateHandler, model.OperationTypeCreate.String())).Methods("POST", "OPTIONS")
 	r.HandleFunc("/{id}", instrumentedHandler(h.ReadHandler, model.OperationTypeRead.String())).Methods("GET", "OPTIONS")
 	r.HandleFunc("/", instrumentedHandler(h.ListHandler, model.OperationTypeList.String())).Methods("GET", "OPTIONS")
+	r.HandleFunc("/{id}", instrumentedHandler(h.DeleteHandler, model.OperationTypeDelete.String())).Methods("DELETE", "OPTIONS")
 	// TODO(gracew): remove cors later
 	r.Use(mux.CORSMethodMiddleware(r))
 	http.Handle("/", r)
