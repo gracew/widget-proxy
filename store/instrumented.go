@@ -40,3 +40,12 @@ func (s InstrumentedStore) ListObjects(pageSize int) ([]generated.Object, error)
 	metrics.DatabaseSummary.WithLabelValues(model.OperationTypeList.String()).Observe(end.Sub(start).Seconds())
 	return res, err
 }
+
+func (s InstrumentedStore) DeleteObject(objectID string) error {
+	start := time.Now()
+	err := s.Delegate.DeleteObject(objectID)
+	end := time.Now()
+	metrics.DatabaseSummary.WithLabelValues(model.OperationTypeDelete.String()).Observe(end.Sub(start).Seconds())
+	return err
+}
+

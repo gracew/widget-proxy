@@ -11,7 +11,7 @@ import (
 type TestInput struct {
 	Test string `json:"test"`
 }
-func TestCreateGetObject(t *testing.T) {
+func TestCreateGetDeleteObject(t *testing.T) {
 	db := pg.Connect(&pg.Options{User: "postgres", Addr: "localhost:5433"})
 	defer db.Close()
 	s := PgStore{DB: db}
@@ -31,6 +31,12 @@ func TestCreateGetObject(t *testing.T) {
 	getRes, err := s.GetObject(createRes.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, createRes, getRes)
+
+	err = s.DeleteObject(createRes.ID)
+	assert.NoError(t, err)
+
+	_, err = s.GetObject(createRes.ID)
+	assert.Error(t, err)
 }
 
 func TestListObjects(t *testing.T) {
