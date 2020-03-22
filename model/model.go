@@ -8,6 +8,7 @@ type Auth struct {
 	AuthenticationType AuthenticationType `json:"authenticationType"`
 	ReadPolicy         *AuthPolicy        `json:"readPolicy"`
 	WritePolicy        *AuthPolicy        `json:"writePolicy"`
+	DeletePolicy       *AuthPolicy        `json:"deletePolicy"`
 }
 
 type AuthPolicy struct {
@@ -78,6 +79,7 @@ const (
 	OperationTypeUpdate OperationType = "UPDATE"
 	OperationTypeRead   OperationType = "READ"
 	OperationTypeList   OperationType = "LIST"
+	OperationTypeDelete OperationType = "DELETE"
 )
 
 var AllOperationType = []OperationType{
@@ -85,11 +87,12 @@ var AllOperationType = []OperationType{
 	OperationTypeUpdate,
 	OperationTypeRead,
 	OperationTypeList,
+	OperationTypeDelete,
 }
 
 func (e OperationType) IsValid() bool {
 	switch e {
-	case OperationTypeCreate, OperationTypeUpdate, OperationTypeRead, OperationTypeList:
+	case OperationTypeCreate, OperationTypeUpdate, OperationTypeRead, OperationTypeList, OperationTypeDelete:
 		return true
 	}
 	return false

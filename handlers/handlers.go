@@ -20,6 +20,8 @@ import (
 
 type Handlers struct {
 	Store store.Store
+	Auth	*model.Auth
+	CustomLogic []model.CustomLogic
 }
 
 func (h Handlers) CreateHandler(w http.ResponseWriter, r *http.Request) {
@@ -36,14 +38,7 @@ func (h Handlers) CreateHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	customLogic, err := config.CustomLogic(config.CustomLogicPath)
-	var createCustomLogic *model.CustomLogic
-	for _, el := range customLogic {
-		if el.OperationType == model.OperationTypeCreate {
-			createCustomLogic = &el
-		}
-	}
-
+	createCustomLogic := h.findCustomLogic(model.OperationTypeCreate)
 	bytes, err := applyBeforeCustomLogic(r, createCustomLogic)
 	if err != nil {
 		panic(err)
@@ -84,14 +79,8 @@ func (h Handlers) ReadHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	// fetch the authorization policy
 	// TODO(gracew): parallelize some of these requests
-	auth, err := config.Auth(config.AuthPath)
-	if err != nil {
-		panic(err)
-	}
-
-	if auth.ReadPolicy.Type == model.AuthPolicyTypeCreatedBy {
+	if h.Auth.ReadPolicy.Type == model.AuthPolicyTypeCreatedBy {
 		if userID != (*res).CreatedBy {
 			json.NewEncoder(w).Encode(&unauthorized{Message: "unauthorized"})
 			return
@@ -151,8 +140,61 @@ func (h Handlers) ListHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(filtered)
 }
 
+func (h Handlers) DeleteHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
+	if r.Method == http.MethodOptions {
+		return
+	}
+
+	// get the userId
+	parseToken := r.Header["X-Parse-Session-Token"][0]
+	userID, err := user.GetUserId(parseToken)
+	if err != nil {
+		panic(err)
+	}
+
+	// fetch object first, and enforce authz
+	vars := mux.Vars(r)
+	res, err := h.Store.GetObject(vars["id"])
+	if h.Auth.DeletePolicy.Type == model.AuthPolicyTypeCreatedBy {
+		if userID != (*res).CreatedBy {
+			json.NewEncoder(w).Encode(&unauthorized{Message: "unauthorized"})
+			return
+		}
+	}
+
+	deleteCustomLogic := h.findCustomLogic(model.OperationTypeDelete)
+	_, err = applyBeforeCustomLogic(r, deleteCustomLogic)
+	if err != nil {
+		panic(err)
+	}
+
+	err = h.Store.DeleteObject(vars["id"])
+	if err != nil {
+		metrics.DatabaseErrors.WithLabelValues(model.OperationTypeDelete.String()).Inc()
+		panic(err)
+	}
+
+	err = applyAfterCustomLogic(w, res, deleteCustomLogic)
+	if err != nil {
+		panic(err)
+	}
+}
+
+
 type unauthorized struct {
 	Message string `json:"message"`
+}
+
+func (h Handlers) findCustomLogic(operation model.OperationType) *model.CustomLogic{
+	for _, el := range h.CustomLogic {
+		if el.OperationType == operation {
+			return &el
+		}
+	}
+	return nil
+
 }
 
 func applyBeforeCustomLogic(r *http.Request, customLogic *model.CustomLogic) ([]byte, error) {

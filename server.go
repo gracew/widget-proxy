@@ -29,11 +29,21 @@ func main() {
 	s := store.InstrumentedStore{Delegate: store.PgStore{DB: db}}
 	s.CreateSchema()
 
+	customLogic, err := config.CustomLogic(config.CustomLogicPath)
+	if err != nil {
+		panic("could not read custom logic file")
+	}
+	auth, err := config.Auth(config.AuthPath)
+	if err != nil {
+		panic("could not read auth file")
+	}
+
 	r := mux.NewRouter()
-	h := handlers.Handlers{Store: s}
+	h := handlers.Handlers{Store: s, CustomLogic: customLogic, Auth: auth}
 	r.HandleFunc("/", instrumentedHandler(h.CreateHandler, model.OperationTypeCreate.String())).Methods("POST", "OPTIONS")
 	r.HandleFunc("/{id}", instrumentedHandler(h.ReadHandler, model.OperationTypeRead.String())).Methods("GET", "OPTIONS")
 	r.HandleFunc("/", instrumentedHandler(h.ListHandler, model.OperationTypeList.String())).Methods("GET", "OPTIONS")
+	r.HandleFunc("/{id}", instrumentedHandler(h.DeleteHandler, model.OperationTypeDelete.String())).Methods("DELETE", "OPTIONS")
 	// TODO(gracew): remove cors later
 	r.Use(mux.CORSMethodMiddleware(r))
 	http.Handle("/", r)

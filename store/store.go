@@ -9,4 +9,5 @@ type Store interface {
 	CreateObject(req []byte, userID string) (*generated.Object, error)
 	GetObject(objectID string) (*generated.Object, error)
 	ListObjects(pageSize int) ([]generated.Object, error)
+	DeleteObject(objectID string) error
 }

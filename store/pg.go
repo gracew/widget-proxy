@@ -63,3 +63,8 @@ func (s PgStore) ListObjects(pageSize int) ([]generated.Object, error) {
 
 	return models, nil
 }
+
+func (s PgStore) DeleteObject(objectID string) error {
+	object := &generated.Object{ID: objectID}
+	return s.DB.Delete(object)
+}
