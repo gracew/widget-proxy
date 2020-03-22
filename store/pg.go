@@ -56,7 +56,7 @@ func (s PgStore) GetObject(objectID string) (*generated.Object, error) {
 func (s PgStore) ListObjects(pageSize int) ([]generated.Object, error) {
 	var models []generated.Object
 	// TODO(gracew): specify a sort order so that paging actually works lol
-	err := s.DB.Model(&models).Limit(pageSize).Select()
+	err := s.DB.Model(&models).Order("created_at DESC").Limit(pageSize).Select()
 	if err != nil {
 		return nil, err
 	}
