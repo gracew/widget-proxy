@@ -11,7 +11,6 @@ import (
 	"github.com/gracew/widget-proxy/config"
 	"github.com/gracew/widget-proxy/handlers"
 	"github.com/gracew/widget-proxy/metrics"
-	"github.com/gracew/widget-proxy/model"
 	"github.com/gracew/widget-proxy/store"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -40,10 +39,11 @@ func main() {
 
 	r := mux.NewRouter()
 	h := handlers.Handlers{Store: s, CustomLogic: customLogic, Auth: auth}
-	r.HandleFunc("/", instrumentedHandler(h.CreateHandler, model.OperationTypeCreate.String())).Methods("POST", "OPTIONS")
-	r.HandleFunc("/{id}", instrumentedHandler(h.ReadHandler, model.OperationTypeRead.String())).Methods("GET", "OPTIONS")
-	r.HandleFunc("/", instrumentedHandler(h.ListHandler, model.OperationTypeList.String())).Methods("GET", "OPTIONS")
-	r.HandleFunc("/{id}", instrumentedHandler(h.DeleteHandler, model.OperationTypeDelete.String())).Methods("DELETE", "OPTIONS")
+	r.HandleFunc("/", instrumentedHandler(h.CreateHandler, metrics.CREATE)).Methods("POST", "OPTIONS")
+	r.HandleFunc("/{id}", instrumentedHandler(h.ReadHandler, metrics.READ)).Methods("GET", "OPTIONS")
+	r.HandleFunc("/{id}/{action}", updateInstrumentedHandler(h.UpdateHandler)).Methods("POST", "OPTIONS")
+	r.HandleFunc("/", instrumentedHandler(h.ListHandler, metrics.LIST)).Methods("GET", "OPTIONS")
+	r.HandleFunc("/{id}", instrumentedHandler(h.DeleteHandler, metrics.DELETE)).Methods("DELETE", "OPTIONS")
 	// TODO(gracew): remove cors later
 	r.Use(mux.CORSMethodMiddleware(r))
 	http.Handle("/", r)
@@ -64,5 +64,11 @@ func instrumentedHandler(handler handler, label string) handler {
 		handler(w, r)
 		end := time.Now()
 		metrics.RequestSummary.WithLabelValues(label).Observe(end.Sub(start).Seconds())
+	}
+}
+
+func updateInstrumentedHandler(handler handler) handler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		instrumentedHandler(handler, mux.Vars(r)["action"])
 	}
 }

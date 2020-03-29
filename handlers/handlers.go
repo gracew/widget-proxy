@@ -21,7 +21,7 @@ import (
 type Handlers struct {
 	Store store.Store
 	Auth	*model.Auth
-	CustomLogic []model.CustomLogic
+	CustomLogic *model.AllCustomLogic
 }
 
 func (h Handlers) CreateHandler(w http.ResponseWriter, r *http.Request) {
@@ -38,8 +38,7 @@ func (h Handlers) CreateHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	createCustomLogic := h.findCustomLogic(model.OperationTypeCreate)
-	bytes, err := applyBeforeCustomLogic(r, createCustomLogic)
+	bytes, err := applyBeforeCustomLogic(r, h.CustomLogic.Create, metrics.CREATE)
 	if err != nil {
 		panic(err)
 	}
@@ -47,11 +46,11 @@ func (h Handlers) CreateHandler(w http.ResponseWriter, r *http.Request) {
 	// delegate to db
 	res, err := h.Store.CreateObject(bytes, userID)
 	if err != nil {
-		metrics.DatabaseErrors.WithLabelValues(model.OperationTypeCreate.String()).Inc()
+		metrics.DatabaseErrors.WithLabelValues(metrics.CREATE).Inc()
 		panic(err)
 	}
 
-	err = applyAfterCustomLogic(w, res, createCustomLogic)
+	err = applyAfterCustomLogic(w, res, h.CustomLogic.Create, metrics.CREATE)
 	if err != nil {
 		panic(err)
 	}
@@ -75,11 +74,10 @@ func (h Handlers) ReadHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	res, err := h.Store.GetObject(vars["id"])
 	if err != nil {
-		metrics.DatabaseErrors.WithLabelValues(model.OperationTypeRead.String()).Inc()
+		metrics.DatabaseErrors.WithLabelValues(metrics.READ).Inc()
 		panic(err)
 	}
 
-	// TODO(gracew): parallelize some of these requests
 	if h.Auth.ReadPolicy.Type == model.AuthPolicyTypeCreatedBy {
 		if userID != (*res).CreatedBy {
 			json.NewEncoder(w).Encode(&unauthorized{Message: "unauthorized"})
@@ -116,7 +114,7 @@ func (h Handlers) ListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	res, err := h.Store.ListObjects(pageSize)
 	if err != nil {
-		metrics.DatabaseErrors.WithLabelValues(model.OperationTypeList.String()).Inc()
+		metrics.DatabaseErrors.WithLabelValues(metrics.LIST).Inc()
 		panic(err)
 	}
 
@@ -138,6 +136,35 @@ func (h Handlers) ListHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO(gracew): support other authz policies
 
 	json.NewEncoder(w).Encode(filtered)
+}
+
+// TODO(gracew): authz
+func (h Handlers) UpdateHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
+	if r.Method == http.MethodOptions {
+		return
+	}
+
+	vars := mux.Vars(r)
+	actionName := vars["action"]
+
+	bytes, err := applyBeforeCustomLogic(r, h.CustomLogic.Update[actionName], actionName)
+	if err != nil {
+		panic(err)
+	}
+
+	// delegate to db
+	res, err := h.Store.UpdateObject(vars["id"], bytes)
+	if err != nil {
+		metrics.DatabaseErrors.WithLabelValues(actionName).Inc()
+		panic(err)
+	}
+
+	err = applyAfterCustomLogic(w, res, h.CustomLogic.Update[actionName], actionName)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (h Handlers) DeleteHandler(w http.ResponseWriter, r *http.Request) {
@@ -164,19 +191,18 @@ func (h Handlers) DeleteHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	deleteCustomLogic := h.findCustomLogic(model.OperationTypeDelete)
-	_, err = applyBeforeCustomLogic(r, deleteCustomLogic)
+	_, err = applyBeforeCustomLogic(r, h.CustomLogic.Delete, metrics.DELETE)
 	if err != nil {
 		panic(err)
 	}
 
 	err = h.Store.DeleteObject(vars["id"])
 	if err != nil {
-		metrics.DatabaseErrors.WithLabelValues(model.OperationTypeDelete.String()).Inc()
+		metrics.DatabaseErrors.WithLabelValues(metrics.DELETE).Inc()
 		panic(err)
 	}
 
-	err = applyAfterCustomLogic(w, res, deleteCustomLogic)
+	err = applyAfterCustomLogic(w, res, h.CustomLogic.Delete, metrics.DELETE)
 	if err != nil {
 		panic(err)
 	}
@@ -187,17 +213,7 @@ type unauthorized struct {
 	Message string `json:"message"`
 }
 
-func (h Handlers) findCustomLogic(operation model.OperationType) *model.CustomLogic{
-	for _, el := range h.CustomLogic {
-		if el.OperationType == operation {
-			return &el
-		}
-	}
-	return nil
-
-}
-
-func applyBeforeCustomLogic(r *http.Request, customLogic *model.CustomLogic) ([]byte, error) {
+func applyBeforeCustomLogic(r *http.Request, customLogic *model.CustomLogic, operation string) ([]byte, error) {
 	if customLogic == nil || customLogic.Before == nil {
 		ret, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -209,11 +225,11 @@ func applyBeforeCustomLogic(r *http.Request, customLogic *model.CustomLogic) ([]
 	start := time.Now()
 	res, err := http.Post(config.CustomLogicUrl + "beforeCreate", "application/json", r.Body)
 	if err != nil {
-		metrics.CustomLogicErrors.WithLabelValues(model.OperationTypeCreate.String(), "before").Inc()
+		metrics.CustomLogicErrors.WithLabelValues(operation, "before").Inc()
 		return nil, errors.Wrap(err, "request to custom logic endpoint failed")
 	}
 	end := time.Now()
-	metrics.CustomLogicSummary.WithLabelValues(customLogic.OperationType.String(), "before").Observe(end.Sub(start).Seconds())
+	metrics.CustomLogicSummary.WithLabelValues(operation, "before").Observe(end.Sub(start).Seconds())
 
 	ret, err := ioutil.ReadAll(res.Body)
 	if err != nil {
@@ -223,7 +239,7 @@ func applyBeforeCustomLogic(r *http.Request, customLogic *model.CustomLogic) ([]
 	return ret, nil
 }
 
-func applyAfterCustomLogic(w http.ResponseWriter, input *generated.Object, customLogic *model.CustomLogic) error {
+func applyAfterCustomLogic(w http.ResponseWriter, input *generated.Object, customLogic *model.CustomLogic, operation string) error {
 	if customLogic == nil || customLogic.After == nil {
 		err := json.NewEncoder(w).Encode(input)
 		if err != nil {
@@ -240,11 +256,11 @@ func applyAfterCustomLogic(w http.ResponseWriter, input *generated.Object, custo
 	start := time.Now()
 	afterRes, err := http.Post(config.CustomLogicUrl + "afterCreate", "application/json", bytes.NewReader(inputBytes))
 	if err != nil {
-		metrics.CustomLogicErrors.WithLabelValues(model.OperationTypeCreate.String(), "after").Inc()
+		metrics.CustomLogicErrors.WithLabelValues(operation, "after").Inc()
 		return errors.Wrap(err, "request to custom logic endpoint failed")
 	}
 	end := time.Now()
-	metrics.CustomLogicSummary.WithLabelValues(customLogic.OperationType.String(), "after").Observe(end.Sub(start).Seconds())
+	metrics.CustomLogicSummary.WithLabelValues(operation, "after").Observe(end.Sub(start).Seconds())
 
 	err = json.NewEncoder(w).Encode(afterRes)
 	if err != nil {

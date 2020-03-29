@@ -67,37 +67,13 @@ func (e AuthenticationType) String() string {
 
 type CustomLogic struct {
 	APIID         string        `json:"apiID"`
-	OperationType OperationType `json:"operationType"`
 	Before    *string       `json:"before"`
 	After     *string       `json:"after"`
 }
 
-type OperationType string
-
-const (
-	OperationTypeCreate OperationType = "CREATE"
-	OperationTypeUpdate OperationType = "UPDATE"
-	OperationTypeRead   OperationType = "READ"
-	OperationTypeList   OperationType = "LIST"
-	OperationTypeDelete OperationType = "DELETE"
-)
-
-var AllOperationType = []OperationType{
-	OperationTypeCreate,
-	OperationTypeUpdate,
-	OperationTypeRead,
-	OperationTypeList,
-	OperationTypeDelete,
-}
-
-func (e OperationType) IsValid() bool {
-	switch e {
-	case OperationTypeCreate, OperationTypeUpdate, OperationTypeRead, OperationTypeList, OperationTypeDelete:
-		return true
-	}
-	return false
-}
-
-func (e OperationType) String() string {
-	return string(e)
+type AllCustomLogic struct {
+	APIID  string                   `json:"apiID" sql:",pk"`
+	Create *CustomLogic        `json:"create"`
+	Update map[string]*CustomLogic `json:"update"`
+	Delete *CustomLogic        `json:"delete"`
 }
