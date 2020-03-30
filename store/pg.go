@@ -64,6 +64,24 @@ func (s PgStore) ListObjects(pageSize int) ([]generated.Object, error) {
 	return models, nil
 }
 
+func (s PgStore) UpdateObject(objectID string, action string, req []byte) (*generated.Object, error) {
+	var dbModel generated.Object
+	err := json.Unmarshal(req, &dbModel)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not unmarshal input as object")
+	}
+
+	dbModel.ID = objectID
+
+	err = s.DB.Update(&dbModel)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to update object")
+	}
+
+	return &dbModel, nil
+}
+
+
 func (s PgStore) DeleteObject(objectID string) error {
 	object := &generated.Object{ID: objectID}
 	return s.DB.Delete(object)

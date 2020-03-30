@@ -3,12 +3,10 @@
 package model
 
 type Auth struct {
-	ID                 string             `json:"id"`
 	APIID              string             `json:"apiID"`
-	AuthenticationType AuthenticationType `json:"authenticationType"`
-	ReadPolicy         *AuthPolicy        `json:"readPolicy"`
-	WritePolicy        *AuthPolicy        `json:"writePolicy"`
-	DeletePolicy       *AuthPolicy        `json:"deletePolicy"`
+	Read        *AuthPolicy        `json:"read"`
+	Write       *AuthPolicy        `json:"write"`
+	Delete       *AuthPolicy        `json:"delete"`
 }
 
 type AuthPolicy struct {
@@ -43,61 +41,15 @@ func (e AuthPolicyType) String() string {
 	return string(e)
 }
 
-type AuthenticationType string
-
-const (
-	AuthenticationTypeBuiltIn AuthenticationType = "BUILT_IN"
-)
-
-var AllAuthenticationType = []AuthenticationType{
-	AuthenticationTypeBuiltIn,
-}
-
-func (e AuthenticationType) IsValid() bool {
-	switch e {
-	case AuthenticationTypeBuiltIn:
-		return true
-	}
-	return false
-}
-
-func (e AuthenticationType) String() string {
-	return string(e)
-}
-
 type CustomLogic struct {
 	APIID         string        `json:"apiID"`
-	OperationType OperationType `json:"operationType"`
 	Before    *string       `json:"before"`
 	After     *string       `json:"after"`
 }
 
-type OperationType string
-
-const (
-	OperationTypeCreate OperationType = "CREATE"
-	OperationTypeUpdate OperationType = "UPDATE"
-	OperationTypeRead   OperationType = "READ"
-	OperationTypeList   OperationType = "LIST"
-	OperationTypeDelete OperationType = "DELETE"
-)
-
-var AllOperationType = []OperationType{
-	OperationTypeCreate,
-	OperationTypeUpdate,
-	OperationTypeRead,
-	OperationTypeList,
-	OperationTypeDelete,
-}
-
-func (e OperationType) IsValid() bool {
-	switch e {
-	case OperationTypeCreate, OperationTypeUpdate, OperationTypeRead, OperationTypeList, OperationTypeDelete:
-		return true
-	}
-	return false
-}
-
-func (e OperationType) String() string {
-	return string(e)
+type AllCustomLogic struct {
+	APIID  string                   `json:"apiID" sql:",pk"`
+	Create *CustomLogic        `json:"create"`
+	Update map[string]*CustomLogic `json:"update"`
+	Delete *CustomLogic        `json:"delete"`
 }

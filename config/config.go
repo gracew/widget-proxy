@@ -39,16 +39,16 @@ func Auth(path string) (*model.Auth, error) {
 }
 
 // CustomLogic reads the custom logic specification from the given file.
-func CustomLogic(path string) ([]model.CustomLogic, error) {
+func CustomLogic(path string) (*model.AllCustomLogic, error) {
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read custom logic file '%s'", path)
 	}
-	var customLogic []model.CustomLogic
+	var customLogic model.AllCustomLogic
 	err = json.Unmarshal(bytes, &customLogic)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal custom logic file '%s'", path)
 	}
 
-	return customLogic, nil
+	return &customLogic, nil
 }

@@ -6,6 +6,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
+const (
+	CREATE = "create"
+	READ = "read"
+	LIST = "list"
+	DELETE = "delete"
+)
 var (
 	objectives = map[float64]float64{0.5: 0.05, 0.75: .025, 0.9: 0.01, 0.95: .005, 0.99: 0.001}
 	customLogicLabels = []string{"method", "when"}
