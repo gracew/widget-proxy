@@ -44,8 +44,6 @@ func main() {
 	r.HandleFunc("/{id}/{action}", updateInstrumentedHandler(h.UpdateHandler)).Methods("POST", "OPTIONS")
 	r.HandleFunc("/", instrumentedHandler(h.ListHandler, metrics.LIST)).Methods("GET", "OPTIONS")
 	r.HandleFunc("/{id}", instrumentedHandler(h.DeleteHandler, metrics.DELETE)).Methods("DELETE", "OPTIONS")
-	// TODO(gracew): remove cors later
-	r.Use(mux.CORSMethodMiddleware(r))
 	http.Handle("/", r)
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -69,6 +67,6 @@ func instrumentedHandler(handler handler, label string) handler {
 
 func updateInstrumentedHandler(handler handler) handler {
 	return func(w http.ResponseWriter, r *http.Request) {
-		instrumentedHandler(handler, mux.Vars(r)["action"])
+		instrumentedHandler(handler, mux.Vars(r)["action"])(w, r)
 	}
 }

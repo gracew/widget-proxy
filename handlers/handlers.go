@@ -19,8 +19,8 @@ import (
 )
 
 type Handlers struct {
-	Store store.Store
-	Auth	*model.Auth
+	Store       store.Store
+	Auth        *model.Auth
 	CustomLogic *model.AllCustomLogic
 }
 
@@ -78,7 +78,7 @@ func (h Handlers) ReadHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	if h.Auth.ReadPolicy.Type == model.AuthPolicyTypeCreatedBy {
+	if h.Auth.Read.Type == model.AuthPolicyTypeCreatedBy {
 		if userID != (*res).CreatedBy {
 			json.NewEncoder(w).Encode(&unauthorized{Message: "unauthorized"})
 			return
@@ -126,7 +126,7 @@ func (h Handlers) ListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var filtered []generated.Object
-	if auth.ReadPolicy.Type == model.AuthPolicyTypeCreatedBy {
+	if auth.Read.Type == model.AuthPolicyTypeCreatedBy {
 		for i := 0; i < len(res); i++ {
 			if userID == res[i].CreatedBy {
 				filtered = append(filtered, res[i])
@@ -155,7 +155,7 @@ func (h Handlers) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// delegate to db
-	res, err := h.Store.UpdateObject(vars["id"], bytes)
+	res, err := h.Store.UpdateObject(vars["id"], actionName, bytes)
 	if err != nil {
 		metrics.DatabaseErrors.WithLabelValues(actionName).Inc()
 		panic(err)
@@ -184,7 +184,7 @@ func (h Handlers) DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	// fetch object first, and enforce authz
 	vars := mux.Vars(r)
 	res, err := h.Store.GetObject(vars["id"])
-	if h.Auth.DeletePolicy.Type == model.AuthPolicyTypeCreatedBy {
+	if h.Auth.Delete.Type == model.AuthPolicyTypeCreatedBy {
 		if userID != (*res).CreatedBy {
 			json.NewEncoder(w).Encode(&unauthorized{Message: "unauthorized"})
 			return
@@ -208,7 +208,6 @@ func (h Handlers) DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 type unauthorized struct {
 	Message string `json:"message"`
 }
@@ -223,7 +222,7 @@ func applyBeforeCustomLogic(r *http.Request, customLogic *model.CustomLogic, ope
 	}
 
 	start := time.Now()
-	res, err := http.Post(config.CustomLogicUrl + "beforeCreate", "application/json", r.Body)
+	res, err := http.Post(config.CustomLogicUrl+"before"+operation, "application/json", r.Body)
 	if err != nil {
 		metrics.CustomLogicErrors.WithLabelValues(operation, "before").Inc()
 		return nil, errors.Wrap(err, "request to custom logic endpoint failed")
@@ -254,7 +253,7 @@ func applyAfterCustomLogic(w http.ResponseWriter, input *generated.Object, custo
 	}
 
 	start := time.Now()
-	afterRes, err := http.Post(config.CustomLogicUrl + "afterCreate", "application/json", bytes.NewReader(inputBytes))
+	afterRes, err := http.Post(config.CustomLogicUrl+"after"+operation, "application/json", bytes.NewReader(inputBytes))
 	if err != nil {
 		metrics.CustomLogicErrors.WithLabelValues(operation, "after").Inc()
 		return errors.Wrap(err, "request to custom logic endpoint failed")

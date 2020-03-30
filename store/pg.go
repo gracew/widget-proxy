@@ -64,7 +64,7 @@ func (s PgStore) ListObjects(pageSize int) ([]generated.Object, error) {
 	return models, nil
 }
 
-func (s PgStore) UpdateObject(objectID string, req []byte) (*generated.Object, error) {
+func (s PgStore) UpdateObject(objectID string, action string, req []byte) (*generated.Object, error) {
 	var dbModel generated.Object
 	err := json.Unmarshal(req, &dbModel)
 	if err != nil {
