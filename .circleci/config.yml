@@ -1,0 +1,16 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: golang:1.13
+    steps:
+      - checkout
+      - run: go run github.com/99designs/gqlgen
+      - run: go get
+      - run:
+          name: Enforce Go Formatted Code
+          # https://circleci.com/blog/enforce-build-standards/
+          # https://carsonip.me/posts/go-fmt-and-ci/
+          command: |
+            output=$(go fmt ./... 2>&1)
+            test -z "$output"

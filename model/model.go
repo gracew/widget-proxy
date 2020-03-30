@@ -3,10 +3,10 @@
 package model
 
 type Auth struct {
-	APIID              string             `json:"apiID"`
-	Read        *AuthPolicy        `json:"read"`
-	Write       *AuthPolicy        `json:"write"`
-	Delete       *AuthPolicy        `json:"delete"`
+	APIID  string      `json:"apiID"`
+	Read   *AuthPolicy `json:"read"`
+	Write  *AuthPolicy `json:"write"`
+	Delete *AuthPolicy `json:"delete"`
 }
 
 type AuthPolicy struct {
@@ -42,14 +42,14 @@ func (e AuthPolicyType) String() string {
 }
 
 type CustomLogic struct {
-	APIID         string        `json:"apiID"`
-	Before    *string       `json:"before"`
-	After     *string       `json:"after"`
+	APIID  string  `json:"apiID"`
+	Before *string `json:"before"`
+	After  *string `json:"after"`
 }
 
 type AllCustomLogic struct {
-	APIID  string                   `json:"apiID" sql:",pk"`
-	Create *CustomLogic        `json:"create"`
+	APIID  string                  `json:"apiID" sql:",pk"`
+	Create *CustomLogic            `json:"create"`
 	Update map[string]*CustomLogic `json:"update"`
-	Delete *CustomLogic        `json:"delete"`
+	Delete *CustomLogic            `json:"delete"`
 }

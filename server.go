@@ -52,7 +52,6 @@ func main() {
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
-
 type handler = func(w http.ResponseWriter, r *http.Request)
 
 func instrumentedHandler(handler handler, label string) handler {
