@@ -11,6 +11,7 @@ import (
 type TestInput struct {
 	Test string `json:"test"`
 }
+
 func TestCreateGetDeleteObject(t *testing.T) {
 	db := pg.Connect(&pg.Options{User: "postgres", Addr: "localhost:5433"})
 	defer db.Close()

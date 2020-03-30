@@ -55,4 +55,3 @@ func (s InstrumentedStore) DeleteObject(objectID string) error {
 	metrics.DatabaseSummary.WithLabelValues(metrics.DELETE).Observe(end.Sub(start).Seconds())
 	return err
 }
-

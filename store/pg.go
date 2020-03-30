@@ -81,7 +81,6 @@ func (s PgStore) UpdateObject(objectID string, action string, req []byte) (*gene
 	return &dbModel, nil
 }
 
-
 func (s PgStore) DeleteObject(objectID string) error {
 	object := &generated.Object{ID: objectID}
 	return s.DB.Delete(object)

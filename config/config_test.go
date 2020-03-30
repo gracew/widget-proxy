@@ -36,14 +36,14 @@ func TestCustomLogic(t *testing.T) {
 	beforeSave := "before"
 	afterSave := "after"
 	customLogic1 := model.CustomLogic{
-		APIID:              "apiID",
+		APIID:         "apiID",
 		OperationType: model.OperationTypeCreate,
-		Before: &beforeSave,
+		Before:        &beforeSave,
 	}
 	customLogic2 := model.CustomLogic{
-		APIID:              "apiID",
+		APIID:         "apiID",
 		OperationType: model.OperationTypeRead,
-		After: &afterSave,
+		After:         &afterSave,
 	}
 	input := []model.CustomLogic{customLogic1, customLogic2}
 
