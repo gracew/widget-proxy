@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -27,6 +28,10 @@ type testResponse struct {
 }
 
 func TestNode(t *testing.T) {
+	if os.Getenv("CI") != "" {
+		t.Skip("Skipping testing in CI environment")
+	}
+
 	beforeCreate := `
 function beforeCreate(input) {
 	input.message = "Hello " + input.name;
@@ -61,6 +66,10 @@ module.exports = afterCreate;
 }
 
 func TestPython(t *testing.T) {
+	if os.Getenv("CI") != "" {
+		t.Skip("Skipping testing in CI environment")
+	}
+
 	beforeCreate := `
 def beforeCreate(input):
   input["message"] = "Hello " + input["name"]
