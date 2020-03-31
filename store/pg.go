@@ -13,7 +13,7 @@ type PgStore struct {
 	DB *pg.DB
 }
 
-// CreateSchema creates tables if they do not exist.
+// CreateSchema creates the object table if it does not exist.
 func (s PgStore) CreateSchema() error {
 	for _, model := range []interface{}{(*generated.Object)(nil)} {
 		err := s.DB.CreateTable(model, &orm.CreateTableOptions{

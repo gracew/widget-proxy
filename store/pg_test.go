@@ -1,6 +1,7 @@
 package store
 
 import (
+	"os"
 	"testing"
 
 	"github.com/go-pg/pg"
@@ -18,7 +19,11 @@ type PgTestSuite struct {
 var db *pg.DB
 
 func (suite *PgTestSuite) SetupTest() {
-	db = pg.Connect(&pg.Options{User: "postgres", Addr: "localhost:5433"})
+	port := os.Getenv("PG_PORT")
+	if port == "" {
+		port = "5432"
+	}
+	db = pg.Connect(&pg.Options{User: "postgres", Addr: "localhost:" + port})
 	suite.s = PgStore{DB: db}
 	err := suite.s.CreateSchema()
 	assert.NoError(suite.T(), err)
