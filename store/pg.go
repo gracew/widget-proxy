@@ -68,22 +68,22 @@ func (s PgStore) ListObjects(pageSize int) ([]generated.Object, error) {
 }
 
 // UpdateObject updates the specified object in the database.
-func (s PgStore) UpdateObject(obj *generated.Object, actionName string) error {
+func (s PgStore) UpdateObject(obj *generated.Object, actionName string) (*generated.Object, error) {
 	// update only the fields specified by the action
 	action := s.findAction(actionName)
 	if action == nil {
-		return errors.New("unknown action " + actionName)
+		return nil, errors.New("unknown action " + actionName)
 	}
 
 	m := s.DB.Model(obj)
 	for _, f := range action.Fields {
 		 m.Column(underscore(f))
 	}
-	_, err := m.WherePK().Update()
+	_, err := m.WherePK().Returning("*").Update()
 	if err != nil {
-		return errors.Wrap(err, "failed to update object")
+		return nil, errors.Wrap(err, "failed to update object")
 	}
-	return nil
+	return obj, nil
 }
 
 func (s PgStore) findAction(actionName string) *model.ActionDefinition {

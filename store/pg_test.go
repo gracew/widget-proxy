@@ -90,15 +90,12 @@ func (suite *PgTestSuite) TestUpdate() {
 	assert.NoError(suite.T(), err)
 
 	update := &generated.Object{ID: obj.ID, Test: "test2", CreatedBy: "userID2"}
-	err = suite.s.UpdateObject(update, "action")
+	updateRes, err := suite.s.UpdateObject(update, "action")
 	assert.NoError(suite.T(), err)
-
-	getRes, err := suite.s.GetObject(createRes.ID)
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), update.Test, getRes.Test)
-	assert.Equal(suite.T(), createRes.CreatedAt, getRes.CreatedAt)
+	assert.Equal(suite.T(), update.Test, updateRes.Test)
 	// CreatedBy is unchanged since it's not an action field
-	assert.Equal(suite.T(), createRes.CreatedBy, getRes.CreatedBy)
+	assert.Equal(suite.T(), createRes.CreatedBy, updateRes.CreatedBy)
+	assert.Equal(suite.T(), createRes.CreatedAt, updateRes.CreatedAt)
 }
 
 func (suite *PgTestSuite) TestDelete() {
