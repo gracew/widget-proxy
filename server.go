@@ -23,9 +23,13 @@ func main() {
 		port = defaultPort
 	}
 
+	api, err := config.API(config.APIPath)
+	if err != nil || api == nil {
+		panic("could not read API file")
+	}
 	db := pg.Connect(&pg.Options{User: "postgres", Addr: config.PostgresAddress})
 	defer db.Close()
-	s := store.InstrumentedStore{Delegate: store.PgStore{DB: db}}
+	s := store.InstrumentedStore{Delegate: store.PgStore{DB: db, API: *api}}
 	s.CreateSchema()
 
 	customLogic, err := config.CustomLogic(config.CustomLogicPath)

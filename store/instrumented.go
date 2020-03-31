@@ -47,12 +47,12 @@ func (s InstrumentedStore) ListObjects(pageSize int) ([]generated.Object, error)
 }
 
 // UpdateObject delegates to another Store instance and records the duration of the operation.
-func (s InstrumentedStore) UpdateObject(obj *generated.Object, action string) (*generated.Object, error) {
+func (s InstrumentedStore) UpdateObject(obj *generated.Object, action string) error {
 	start := time.Now()
-	res, err := s.Delegate.UpdateObject(obj, action)
+	err := s.Delegate.UpdateObject(obj, action)
 	end := time.Now()
 	metrics.DatabaseSummary.WithLabelValues(action).Observe(end.Sub(start).Seconds())
-	return res, err
+	return err
 }
 
 // DeleteObject delegates to another Store instance and records the duration of the operation.
