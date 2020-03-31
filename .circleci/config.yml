@@ -14,3 +14,4 @@ jobs:
           command: |
             output=$(go fmt ./... 2>&1)
             test -z "$output"
+      - run: go test ./...
