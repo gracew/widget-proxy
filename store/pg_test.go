@@ -23,7 +23,7 @@ func (suite *PgTestSuite) SetupTest() {
 	if port == "" {
 		port = "5432"
 	}
-	db = pg.Connect(&pg.Options{User: "postgres", Addr: "localhost:" + port})
+	db = pg.Connect(&pg.Options{User: "postgres", Password: "postgres", Addr: "localhost:" + port})
 	suite.s = PgStore{DB: db}
 	err := suite.s.CreateSchema()
 	assert.NoError(suite.T(), err)
