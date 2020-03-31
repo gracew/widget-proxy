@@ -25,12 +25,6 @@ type Handlers struct {
 }
 
 func (h Handlers) CreateHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "*")
-	if r.Method == http.MethodOptions {
-		return
-	}
-
 	// get the userId
 	parseToken := r.Header["X-Parse-Session-Token"][0]
 	userID, err := user.GetUserId(parseToken)
@@ -64,12 +58,6 @@ func (h Handlers) CreateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handlers) ReadHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "*")
-	if r.Method == http.MethodOptions {
-		return
-	}
-
 	// get the userId
 	parseToken := r.Header["X-Parse-Session-Token"][0]
 	userID, err := user.GetUserId(parseToken)
@@ -97,12 +85,6 @@ func (h Handlers) ReadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handlers) ListHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "*")
-	if r.Method == http.MethodOptions {
-		return
-	}
-
 	// get the userId
 	parseToken := r.Header["X-Parse-Session-Token"][0]
 	userID, err := user.GetUserId(parseToken)
@@ -147,12 +129,6 @@ func (h Handlers) ListHandler(w http.ResponseWriter, r *http.Request) {
 
 // TODO(gracew): authz
 func (h Handlers) UpdateHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "*")
-	if r.Method == http.MethodOptions {
-		return
-	}
-
 	vars := mux.Vars(r)
 	actionName := vars["action"]
 
@@ -182,12 +158,6 @@ func (h Handlers) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handlers) DeleteHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "*")
-	if r.Method == http.MethodOptions {
-		return
-	}
-
 	// get the userId
 	parseToken := r.Header["X-Parse-Session-Token"][0]
 	userID, err := user.GetUserId(parseToken)

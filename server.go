@@ -60,6 +60,13 @@ type handler = func(w http.ResponseWriter, r *http.Request)
 
 func instrumentedHandler(handler handler, label string) handler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// TODO(gracew): remove cors later
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		if r.Method == http.MethodOptions {
+			return
+		}
+
 		metrics.RequestCounter.WithLabelValues(label).Inc()
 		start := time.Now()
 		handler(w, r)
