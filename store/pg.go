@@ -4,13 +4,15 @@ import (
 	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
 	"github.com/gracew/widget-proxy/generated"
+	"github.com/gracew/widget-proxy/model"
 	"github.com/pkg/errors"
 )
 
 // PgStore implements the Store interface using Postgres.
 type PgStore struct {
 	Store
-	DB *pg.DB
+	API model.API
+	DB  *pg.DB
 }
 
 // CreateSchema creates the object table if it does not exist.
@@ -66,13 +68,34 @@ func (s PgStore) ListObjects(pageSize int) ([]generated.Object, error) {
 }
 
 // UpdateObject updates the specified object in the database.
-func (s PgStore) UpdateObject(obj *generated.Object, action string) (*generated.Object, error) {
-	err := s.DB.Update(obj)
+func (s PgStore) UpdateObject(obj *generated.Object, actionName string) (*generated.Object, error) {
+	// update only the fields specified by the action
+	action := s.findAction(actionName)
+	if action == nil {
+		return nil, errors.New("unknown action " + actionName)
+	}
+
+	m := s.DB.Model(obj)
+	for _, f := range action.Fields {
+		m.Column(underscore(f))
+	}
+	_, err := m.WherePK().Returning("*").Update()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to update object")
 	}
-
 	return obj, nil
+}
+
+func (s PgStore) findAction(actionName string) *model.ActionDefinition {
+	if s.API.Operations == nil || s.API.Operations.Update == nil {
+		return nil
+	}
+	for _, action := range s.API.Operations.Update.Actions {
+		if action.Name == actionName {
+			return &action
+		}
+	}
+	return nil
 }
 
 // DeleteObject deletes the specified object from the database.

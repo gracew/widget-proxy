@@ -7,6 +7,7 @@ import (
 	"github.com/go-pg/pg"
 	"github.com/google/uuid"
 	"github.com/gracew/widget-proxy/generated"
+	"github.com/gracew/widget-proxy/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -24,7 +25,18 @@ func (suite *PgTestSuite) SetupTest() {
 		port = "5432"
 	}
 	db = pg.Connect(&pg.Options{User: "postgres", Password: "postgres", Addr: "localhost:" + port})
-	suite.s = PgStore{DB: db}
+	suite.s = PgStore{
+		DB: db,
+		API: model.API{
+			Operations: &model.OperationDefinition{
+				Update: &model.UpdateDefinition{
+					Actions: []model.ActionDefinition{
+						model.ActionDefinition{Name: "action", Fields: []string{"Test"}},
+					},
+				},
+			},
+		},
+	}
 	err := suite.s.CreateSchema()
 	assert.NoError(suite.T(), err)
 }
@@ -72,22 +84,19 @@ func (suite *PgTestSuite) TestList() {
 	assert.Contains(suite.T(), ids, obj2.ID)
 }
 
-/*func (suite *PgTestSuite) TestUpdate() {
+func (suite *PgTestSuite) TestUpdate() {
 	obj := &generated.Object{Test: "test", CreatedBy: "userID"}
 	createRes, err := suite.s.CreateObject(obj)
 	assert.NoError(suite.T(), err)
 
-	update := &generated.Object{ID: obj.ID, Test: "test2"}
+	update := &generated.Object{ID: obj.ID, Test: "test2", CreatedBy: "userID2"}
 	updateRes, err := suite.s.UpdateObject(update, "action")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), update.Test, updateRes.Test)
-
-	getRes, err := suite.s.GetObject(createRes.ID)
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), update.Test, getRes.Test)
-	assert.Equal(suite.T(), createRes.CreatedAt, getRes.CreatedAt)
-	assert.Equal(suite.T(), createRes.CreatedBy, getRes.CreatedBy)
-}*/
+	// CreatedBy is unchanged since it's not an action field
+	assert.Equal(suite.T(), createRes.CreatedBy, updateRes.CreatedBy)
+	assert.Equal(suite.T(), createRes.CreatedAt, updateRes.CreatedAt)
+}
 
 func (suite *PgTestSuite) TestDelete() {
 	obj := &generated.Object{Test: "test", CreatedBy: "userID"}

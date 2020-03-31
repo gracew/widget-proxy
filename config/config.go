@@ -9,19 +9,34 @@ import (
 	"github.com/pkg/errors"
 )
 
-const ParseURL = "http://parse:1337/parse/"
+const (
+	ParseURL        = "http://parse:1337/parse/"
+	PostgresAddress = "api-postgres:5432"
+	CustomLogicURL  = "http://custom-logic:8080/"
 
-const PostgresAddress = "api-postgres:5432"
-
-const CustomLogicURL = "http://custom-logic:8080/"
-
-const AuthPath = "/app/auth.json"
-
-const CustomLogicPath = "/app/customLogic.json"
+	APIPath         = "/app/api.json"
+	AuthPath        = "/app/auth.json"
+	CustomLogicPath = "/app/customLogic.json"
+)
 
 var (
 	APIName = os.Getenv("API_NAME")
 )
+
+// API reads the API specification from the given file.
+func API(path string) (*model.API, error) {
+	bytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read api file '%s'", path)
+	}
+	var api model.API
+	err = json.Unmarshal(bytes, &api)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal api file '%s'", path)
+	}
+
+	return &api, nil
+}
 
 // Auth reads the auth specification from the given file.
 func Auth(path string) (*model.Auth, error) {

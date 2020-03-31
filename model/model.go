@@ -2,6 +2,25 @@
 
 package model
 
+type API struct {
+	ID         string               `json:"id"`
+	Name       string               `json:"name"`
+	Operations *OperationDefinition `json:"operations"`
+}
+
+type OperationDefinition struct {
+	Update *UpdateDefinition `json:"update"`
+}
+
+type UpdateDefinition struct {
+	Actions []ActionDefinition `json:"actions"`
+}
+
+type ActionDefinition struct {
+	Name   string   `json:"name"`
+	Fields []string `json:"fields"`
+}
+
 type Auth struct {
 	APIID  string      `json:"apiID"`
 	Read   *AuthPolicy `json:"read"`
