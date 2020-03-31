@@ -77,7 +77,7 @@ func (s PgStore) UpdateObject(obj *generated.Object, actionName string) (*genera
 
 	m := s.DB.Model(obj)
 	for _, f := range action.Fields {
-		 m.Column(underscore(f))
+		m.Column(underscore(f))
 	}
 	_, err := m.WherePK().Returning("*").Update()
 	if err != nil {
