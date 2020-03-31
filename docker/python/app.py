@@ -6,8 +6,7 @@ from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-customLogicDir = "./customLogic/"
-files = list(filter(lambda file: file.endswith(".py"), os.listdir(customLogicDir)))
+files = list(filter(lambda file: file.endswith(".py"), os.listdir("./customLogic")))
 print("found files %s" % files)
 
 def getHandler(fileNoExt):
@@ -15,7 +14,6 @@ def getHandler(fileNoExt):
     attrs = map(lambda v: getattr(module, v), filter(lambda v: not v.startswith("__"), vars(module)))
     customLogic = next(filter(lambda attr: callable(attr), attrs))
     def handler():
-        print(attrs)
         output = customLogic(request.get_json())
         return jsonify(output)
     return handler
