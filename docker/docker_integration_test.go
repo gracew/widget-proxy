@@ -66,15 +66,25 @@ def beforeCreate(input):
   input["message"] = "Hello " + input["name"]
   return input
 `
+	afterCreate := `
+def afterCreate(input):
+  input["message"] = "Bye " + input["name"]
+  return input
+`
 	localPort := "7071"
 	container := setupContainer(t, "python", localPort, []fileContent{
-		fileContent{filename: "beforeCreate.py", content: beforeCreate}},
-	)
+		fileContent{filename: "beforecreate.py", content: beforeCreate},
+		fileContent{filename: "aftercreate.py", content: afterCreate},
+	})
 	defer tearDownContainer(t, container)
 
-	res1, err := http.Post(fmt.Sprintf("http://localhost:%s/beforeCreate", localPort), "application/json", strings.NewReader(`{"name": "Jane"}`))
+	res1, err := http.Post(fmt.Sprintf("http://localhost:%s/beforecreate", localPort), "application/json", strings.NewReader(`{"name": "Jane"}`))
 	assert.NoError(t, err)
 	assert.Equal(t, testResponse{Name: "Jane", Message: "Hello Jane"}, decode(t, res1.Body))
+
+	res2, err := http.Post(fmt.Sprintf("http://localhost:%s/aftercreate", localPort), "application/json", strings.NewReader(`{"name": "Jane"}`))
+	assert.NoError(t, err)
+	assert.Equal(t, testResponse{Name: "Jane", Message: "Bye Jane"}, decode(t, res2.Body))
 }
 
 // returns the container name
@@ -116,17 +126,7 @@ func setupContainer(t *testing.T, buildPath string, localPort string, fileConten
 	t.Log(string(out))
 	assert.NoError(t, err)
 
-	// wait up to one second for server to start
-	for i := 0; i < 10; i++ {
-		time.Sleep(100 * time.Millisecond)
-		res, err := http.Get(fmt.Sprintf("http://localhost:%s/ping", localPort))
-		if err == nil && res.StatusCode == 200 {
-			t.Log(i)
-			break
-		}
-	}
-	assert.NoError(t, err)
-
+	waitForServer(t, localPort)
 	return containerName
 }
 
@@ -137,6 +137,18 @@ func writeFileInDir(dir string, name string, input string) error {
 		return err
 	}
 	return nil
+}
+
+// waits up to one second for server to start
+func waitForServer(t *testing.T, localPort string) {
+	for i := 0; i < 10; i++ {
+		time.Sleep(100 * time.Millisecond)
+		res, err := http.Get(fmt.Sprintf("http://localhost:%s/ping", localPort))
+		if err == nil && res.StatusCode == 200 {
+			return
+		}
+	}
+	assert.Fail(t, "server failed to start within 1 second")
 }
 
 func decode(t *testing.T, body io.Reader) testResponse {

@@ -1,3 +1,4 @@
+import importlib
 import json
 import os
 
@@ -5,24 +6,22 @@ from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-BEFORE_CREATE = "./customLogic/beforeCreate.py"
-AFTER_CREATE = "./customLogic/afterCreate.py"
+customLogicDir = "./customLogic/"
+files = list(filter(lambda file: file.endswith(".py"), os.listdir(customLogicDir)))
+print("found files %s" % files)
 
-if os.path.exists(BEFORE_CREATE):
-    @app.route("/beforeCreate", methods=["POST"])
-    def beforeCreate():
-        from customLogic.beforeCreate import beforeCreate
-        output = beforeCreate(request.get_json())
+for file in files:
+    fileNoExt = file[:-3]
+    module = importlib.import_module("." + fileNoExt, package="customLogic")
+    attrs = map(lambda v: getattr(module, v), filter(lambda v: not v.startswith("__"), vars(module)))
+    customLogic = next(filter(lambda attr: callable(attr), attrs))
+    @app.route("/" + fileNoExt, methods=["POST"])
+    def handler():
+        output = customLogic(request.get_json())
         return jsonify(output)
-
-if os.path.exists(AFTER_CREATE):
-    @app.route("/afterCreate", methods=["POST"])
-    def afterCreate():
-        from customLogic.afterCreate import afterCreate
-        output = afterCreate(request.get_json())
-        return jsonify(output)
+    handler.__name__ = fileNoExt
 
 
 @app.route("/ping")
 def ping():
-    return
+    return "pong"

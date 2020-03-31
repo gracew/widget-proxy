@@ -15,8 +15,8 @@ const files = fs
 console.log("found files " + files);
 
 files.forEach(file => {
-  const customLogic = require(customLogicDir + file);
   const fileNoExt = file.substring(0, file.length - 3);
+  const customLogic = require(customLogicDir + file);
   app.post("/" + fileNoExt, (req, res) => {
     const output = customLogic(req.body);
     res.setHeader("Content-Type", "application/json");
@@ -24,5 +24,5 @@ files.forEach(file => {
   });
 });
 
-app.get("/ping", (req, res) => res.end());
+app.get("/ping", (req, res) => res.end("pong"));
 app.listen(port, () => console.log(`Listening on port ${port}`));
