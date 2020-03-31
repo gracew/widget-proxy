@@ -15,6 +15,10 @@ type PgStore struct {
 
 // CreateSchema creates the object table if it does not exist.
 func (s PgStore) CreateSchema() error {
+	_, err := s.DB.Exec("CREATE EXTENSION IF NOT EXISTS pgcrypto")
+	if err != nil {
+		return errors.Wrap(err, "failed to create pgcrypto extension")
+	}
 	for _, model := range []interface{}{(*generated.Object)(nil)} {
 		err := s.DB.CreateTable(model, &orm.CreateTableOptions{
 			IfNotExists: true,
