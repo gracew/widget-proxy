@@ -1,5 +1,7 @@
 package user
 
+//go:generate $GOPATH/bin/mockgen -source=$GOFILE -destination=$PWD/mocks/$GOFILE -package=mocks
+
 import (
 	"encoding/json"
 	"net/http"
@@ -8,6 +10,10 @@ import (
 	"github.com/gracew/widget-proxy/config"
 	"github.com/pkg/errors"
 )
+
+type Authenticator interface {
+	GetUserId(header http.Header) (string, error)
+}
 
 type CreateRes struct {
 	CreatedAt string `json:"createdAt"`

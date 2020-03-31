@@ -33,3 +33,10 @@ This repository also contains the docker images for running custom logic, found 
 are expected to be launched with a directory at `/app/customLogic` containing user-specified custom logic. Each file
 in this directory corresponds to a POST HTTP endpoint, where the filename (with extension stripped) is the endpoint
 path. For example, a file `beforecreate.js` or `beforecreate.py` would result in the endpoint `/beforecreate`.
+
+## Tests
+
+The tests rely on generated mocks:
+```
+go generate ./...
+```
