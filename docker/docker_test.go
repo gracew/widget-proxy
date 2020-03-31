@@ -12,6 +12,7 @@ import (
 
 // not really a test, but it spins up a node-runner instance that can be manually interacted with
 func TestNode(t *testing.T) {
+	t.Skip()
 	buildCmd := exec.Command("docker",
 		"build",
 		"node",
@@ -55,6 +56,7 @@ module.exports = beforeSave;
 }
 
 func TestPython(t *testing.T) {
+	t.Skip()
 	buildCmd := exec.Command("docker",
 		"build",
 		"python",

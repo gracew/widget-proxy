@@ -42,7 +42,6 @@ func (e AuthPolicyType) String() string {
 }
 
 type CustomLogic struct {
-	APIID  string  `json:"apiID"`
 	Before *string `json:"before"`
 	After  *string `json:"after"`
 }

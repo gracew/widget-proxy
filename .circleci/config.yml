@@ -3,6 +3,9 @@ jobs:
   build:
     docker:
       - image: golang:1.13
+      - image: postgres:11-alpine
+        environment:
+          POSTGRES_PASSWORD: postgres
     steps:
       - checkout
       - run: go run github.com/99designs/gqlgen
@@ -14,3 +17,4 @@ jobs:
           command: |
             output=$(go fmt ./... 2>&1)
             test -z "$output"
+      - run: go test ./...
