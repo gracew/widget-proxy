@@ -22,7 +22,7 @@ var db *pg.DB
 func (suite *PgTestSuite) SetupTest() {
 	port := os.Getenv("PG_PORT")
 	if port == "" {
-		port = "5433"
+		port = "5432"
 	}
 	db = pg.Connect(&pg.Options{User: "postgres", Password: "postgres", Addr: "localhost:" + port})
 	suite.s = PgStore{
