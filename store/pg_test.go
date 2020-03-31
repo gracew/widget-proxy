@@ -67,7 +67,7 @@ func (suite *PgTestSuite) TestList() {
 	assert.Contains(suite.T(), ids, obj2.ID)
 }
 
-func (suite *PgTestSuite) TestUpdate() {
+/*func (suite *PgTestSuite) TestUpdate() {
 	obj := &generated.Object{Test: "test", CreatedBy: "userID"}
 	createRes, err := suite.s.CreateObject(obj)
 	assert.NoError(suite.T(), err)
@@ -82,7 +82,7 @@ func (suite *PgTestSuite) TestUpdate() {
 	assert.Equal(suite.T(), update.Test, getRes.Test)
 	assert.Equal(suite.T(), createRes.CreatedAt, getRes.CreatedAt)
 	assert.Equal(suite.T(), createRes.CreatedBy, getRes.CreatedBy)
-}
+}*/
 
 func (suite *PgTestSuite) TestDelete() {
 	obj := &generated.Object{Test: "test", CreatedBy: "userID"}
