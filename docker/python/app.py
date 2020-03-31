@@ -10,16 +10,19 @@ customLogicDir = "./customLogic/"
 files = list(filter(lambda file: file.endswith(".py"), os.listdir(customLogicDir)))
 print("found files %s" % files)
 
-for file in files:
-    fileNoExt = file[:-3]
+def getHandler(fileNoExt):
     module = importlib.import_module("." + fileNoExt, package="customLogic")
     attrs = map(lambda v: getattr(module, v), filter(lambda v: not v.startswith("__"), vars(module)))
     customLogic = next(filter(lambda attr: callable(attr), attrs))
-    @app.route("/" + fileNoExt, methods=["POST"])
     def handler():
+        print(attrs)
         output = customLogic(request.get_json())
         return jsonify(output)
-    handler.__name__ = fileNoExt
+    return handler
+
+for file in files:
+    fileNoExt = file[:-3]
+    app.add_url_rule("/" + fileNoExt, fileNoExt, getHandler(fileNoExt), methods=["POST"])
 
 
 @app.route("/ping")

@@ -159,11 +159,7 @@ func decode(t *testing.T, body io.Reader) testResponse {
 }
 
 func tearDownContainer(t *testing.T, containerName string) {
-	cmd := exec.Command("docker",
-		"stop",
-		// "-f",
-		containerName,
-	)
+	cmd := exec.Command("docker", "stop", containerName)
 	out, err := cmd.CombinedOutput()
 	t.Log(string(out))
 	assert.NoError(t, err)
