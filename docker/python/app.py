@@ -21,3 +21,8 @@ if os.path.exists(AFTER_CREATE):
         from customLogic.afterCreate import afterCreate
         output = afterCreate(request.get_json())
         return jsonify(output)
+
+
+@app.route("/ping")
+def ping():
+    return

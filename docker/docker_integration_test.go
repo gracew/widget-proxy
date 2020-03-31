@@ -1,82 +1,93 @@
 package docker
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
 	"io/ioutil"
+	"net/http"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
-// not really a test, but it spins up a node-runner instance that can be manually interacted with
+type fileContent struct {
+	filename string
+	content  string
+}
+
+type testResponse struct {
+	Name    string `json:"name"`
+	Message string `json:"message"`
+}
+
 func TestNode(t *testing.T) {
 	beforeCreate := `
-function beforeSave(input) {
-	input.concat = input.name + " " + input.score;
+function beforeCreate(input) {
+	input.message = "Hello " + input.name;
 	return input;
 }
 
-module.exports = beforeSave;
+module.exports = beforeCreate;
+`
+	afterCreate := `
+function afterCreate(input) {
+	input.message = "Bye " + input.name;
+	return input;
+}
+
+module.exports = afterCreate;
 `
 
-	setupContainer(t, "node-runner", []fileContent{fileContent{filename: "beforecreate.js", content: beforeCreate}})
+	localPort := "7070"
+	container := setupContainer(t, "node", localPort, []fileContent{
+		fileContent{filename: "beforecreate.js", content: beforeCreate},
+		fileContent{filename: "aftercreate.js", content: afterCreate},
+	})
+	defer tearDownContainer(t, container)
+
+	res1, err := http.Post(fmt.Sprintf("http://localhost:%s/beforecreate", localPort), "application/json", strings.NewReader(`{"name": "Jane"}`))
+	assert.NoError(t, err)
+	assert.Equal(t, testResponse{Name: "Jane", Message: "Hello Jane"}, decode(t, res1.Body))
+
+	res2, err := http.Post(fmt.Sprintf("http://localhost:%s/aftercreate", localPort), "application/json", strings.NewReader(`{"name": "Jane"}`))
+	assert.NoError(t, err)
+	assert.Equal(t, testResponse{Name: "Jane", Message: "Bye Jane"}, decode(t, res2.Body))
 }
 
 func TestPython(t *testing.T) {
-	buildCmd := exec.Command("docker",
-		"build",
-		"python",
-		"-t",
-		"python-runner",
-	)
-	err := buildCmd.Run()
-	assert.NoError(t, err)
-
-	beforeSave := `
+	beforeCreate := `
 def beforeCreate(input):
-  input["concat"] = input["name"] + " " + str(input["score"])
+  input["message"] = "Hello " + input["name"]
   return input
 `
-	customLogicDir, err := ioutil.TempDir("/Users/gracew/tmp", "customLogic-")
-	assert.NoError(t, err)
-
-	err = writeFileInDir(customLogicDir, "beforeCreate.py", beforeSave)
-	assert.NoError(t, err)
-
-	containerName := uuid.New().String()
-	runCmd := exec.Command("docker",
-		"run",
-		"-d",
-		"-v",
-		customLogicDir+":/app/customLogic",
-		"-p",
-		"7070:8080",
-		"--name",
-		containerName,
-		"--network",
-		"widget-proxy_default",
-		"python-runner",
+	localPort := "7071"
+	container := setupContainer(t, "python", localPort, []fileContent{
+		fileContent{filename: "beforeCreate.py", content: beforeCreate}},
 	)
-	out, err := runCmd.CombinedOutput()
-	assert.NoError(t, err, "%s", string(out))
-}
+	defer tearDownContainer(t, container)
 
-type fileContent struct {
-	filename string
-	content string
+	res1, err := http.Post(fmt.Sprintf("http://localhost:%s/beforeCreate", localPort), "application/json", strings.NewReader(`{"name": "Jane"}`))
+	assert.NoError(t, err)
+	assert.Equal(t, testResponse{Name: "Jane", Message: "Hello Jane"}, decode(t, res1.Body))
 }
 
 // returns the container name
-func setupContainer(t *testing.T, buildPath string, fileContents []fileContent) string {
+func setupContainer(t *testing.T, buildPath string, localPort string, fileContents []fileContent) string {
+	imageName := buildPath + "-runner"
 	buildCmd := exec.Command("docker",
 		"build",
 		buildPath,
 		"-t",
-		buildPath + "-runner",
+		imageName,
 	)
-	err := buildCmd.Run()
+	out, err := buildCmd.CombinedOutput()
+	t.Log(string(out))
 	assert.NoError(t, err)
 
 	customLogicDir, err := ioutil.TempDir("/Users/gracew/tmp", "customLogic-")
@@ -94,15 +105,29 @@ func setupContainer(t *testing.T, buildPath string, fileContents []fileContent) 
 		"-v",
 		customLogicDir+":/app/customLogic",
 		"-p",
-		"7070:8080",
+		localPort+":8080",
 		"--name",
 		containerName,
 		"--network",
 		"widget-proxy_default",
-		buildPath,
+		imageName,
 	)
-	out, err := runCmd.CombinedOutput()
-	assert.NoError(t, err, "%s", string(out))
+	out, err = runCmd.CombinedOutput()
+	t.Log(string(out))
+	assert.NoError(t, err)
+
+	// wait up to one second for server to start
+	for i := 0; i < 10; i++ {
+		time.Sleep(100 * time.Millisecond)
+		res, err := http.Get(fmt.Sprintf("http://localhost:%s/ping", localPort))
+		if err == nil && res.StatusCode == 200 {
+			t.Log(i)
+			break
+		}
+	}
+	assert.NoError(t, err)
+
+	return containerName
 }
 
 func writeFileInDir(dir string, name string, input string) error {
@@ -112,4 +137,22 @@ func writeFileInDir(dir string, name string, input string) error {
 		return err
 	}
 	return nil
+}
+
+func decode(t *testing.T, body io.Reader) testResponse {
+	var res testResponse
+	err := json.NewDecoder(body).Decode(&res)
+	assert.NoError(t, err)
+	return res
+}
+
+func tearDownContainer(t *testing.T, containerName string) {
+	cmd := exec.Command("docker",
+		"stop",
+		// "-f",
+		containerName,
+	)
+	out, err := cmd.CombinedOutput()
+	t.Log(string(out))
+	assert.NoError(t, err)
 }
