@@ -1,19 +1,19 @@
 package store
 
 import (
-	"encoding/json"
-
 	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
 	"github.com/gracew/widget-proxy/generated"
 	"github.com/pkg/errors"
 )
 
+// PgStore implements the Store interface using Postgres.
 type PgStore struct {
 	Store
 	DB *pg.DB
 }
 
+// CreateSchema creates tables if they do not exist.
 func (s PgStore) CreateSchema() error {
 	for _, model := range []interface{}{(*generated.Object)(nil)} {
 		err := s.DB.CreateTable(model, &orm.CreateTableOptions{
@@ -26,6 +26,7 @@ func (s PgStore) CreateSchema() error {
 	return nil
 }
 
+// CreateObject inserts the object into the database.
 func (s PgStore) CreateObject(obj *generated.Object) (*generated.Object, error) {
 	err := s.DB.Insert(obj)
 	if err != nil {
@@ -49,9 +50,9 @@ func (s PgStore) GetObject(objectID string) (*generated.Object, error) {
 	return object, nil
 }
 
+// ListObjects retrieves the specified number of objects, ordered by created_at DESC.
 func (s PgStore) ListObjects(pageSize int) ([]generated.Object, error) {
 	var models []generated.Object
-	// TODO(gracew): specify a sort order so that paging actually works lol
 	err := s.DB.Model(&models).Order("created_at DESC").Limit(pageSize).Select()
 	if err != nil {
 		return nil, err
@@ -60,23 +61,17 @@ func (s PgStore) ListObjects(pageSize int) ([]generated.Object, error) {
 	return models, nil
 }
 
-func (s PgStore) UpdateObject(objectID string, action string, req []byte) (*generated.Object, error) {
-	var dbModel generated.Object
-	err := json.Unmarshal(req, &dbModel)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not unmarshal input as object")
-	}
-
-	dbModel.ID = objectID
-
-	err = s.DB.Update(&dbModel)
+// UpdateObject updates the specified object in the database.
+func (s PgStore) UpdateObject(obj *generated.Object, action string) (*generated.Object, error) {
+	err := s.DB.Update(obj)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to update object")
 	}
 
-	return &dbModel, nil
+	return obj, nil
 }
 
+// DeleteObject deletes the specified object from the database.
 func (s PgStore) DeleteObject(objectID string) error {
 	object := &generated.Object{ID: objectID}
 	return s.DB.Delete(object)

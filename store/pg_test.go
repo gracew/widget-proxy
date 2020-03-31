@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/go-pg/pg"
+	"github.com/google/uuid"
 	"github.com/gracew/widget-proxy/generated"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -27,10 +28,7 @@ func (suite *PgTestSuite) TearDownTest() {
 	db.Close()
 }
 
-func (suite *PgTestSuite) TestCreateGetDeleteObject() {
-	err := suite.s.CreateSchema()
-	assert.NoError(suite.T(), err)
-
+func (suite *PgTestSuite) TestCreateGet() {
 	obj := &generated.Object{Test: "test", CreatedBy: "userID"}
 	createRes, err := suite.s.CreateObject(obj)
 	assert.NoError(suite.T(), err)
@@ -42,16 +40,15 @@ func (suite *PgTestSuite) TestCreateGetDeleteObject() {
 	getRes, err := suite.s.GetObject(createRes.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), createRes, getRes)
-
-	err = suite.s.DeleteObject(createRes.ID)
-	assert.NoError(suite.T(), err)
-
-	nilRes, err := suite.s.GetObject(createRes.ID)
-	assert.NoError(suite.T(), err)
-	assert.Nil(suite.T(), nilRes)
 }
 
-func (suite *PgTestSuite) TestListObjects() {
+func (suite *PgTestSuite) TestGetUnknownID() {
+	res, err := suite.s.GetObject(uuid.New().String())
+	assert.NoError(suite.T(), err)
+	assert.Nil(suite.T(), res)
+}
+
+func (suite *PgTestSuite) TestList() {
 	obj1 := &generated.Object{Test: "test", CreatedBy: "userID"}
 	_, err := suite.s.CreateObject(obj1)
 	assert.NoError(suite.T(), err)
@@ -68,6 +65,36 @@ func (suite *PgTestSuite) TestListObjects() {
 	}
 	assert.Contains(suite.T(), ids, obj1.ID)
 	assert.Contains(suite.T(), ids, obj2.ID)
+}
+
+func (suite *PgTestSuite) TestUpdate() {
+	obj := &generated.Object{Test: "test", CreatedBy: "userID"}
+	createRes, err := suite.s.CreateObject(obj)
+	assert.NoError(suite.T(), err)
+
+	update := &generated.Object{ID: obj.ID, Test: "test2"}
+	updateRes, err := suite.s.UpdateObject(update, "action")
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), update.Test, updateRes.Test)
+
+	getRes, err := suite.s.GetObject(createRes.ID)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), update.Test, getRes.Test)
+	assert.Equal(suite.T(), createRes.CreatedAt, getRes.CreatedAt)
+	assert.Equal(suite.T(), createRes.CreatedBy, getRes.CreatedBy)
+}
+
+func (suite *PgTestSuite) TestDelete() {
+	obj := &generated.Object{Test: "test", CreatedBy: "userID"}
+	createRes, err := suite.s.CreateObject(obj)
+	assert.NoError(suite.T(), err)
+
+	err = suite.s.DeleteObject(createRes.ID)
+	assert.NoError(suite.T(), err)
+
+	nilRes, err := suite.s.GetObject(createRes.ID)
+	assert.NoError(suite.T(), err)
+	assert.Nil(suite.T(), nilRes)
 }
 
 func TestPgTestSuite(t *testing.T) {

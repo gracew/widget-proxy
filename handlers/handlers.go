@@ -162,7 +162,14 @@ func (h Handlers) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// delegate to db
-	res, err := h.Store.UpdateObject(vars["id"], actionName, bytes)
+	var obj *generated.Object
+	err = json.Unmarshal(bytes, obj)
+	if err != nil {
+		panic(err)
+	}
+	obj.ID = vars["id"]
+
+	res, err := h.Store.UpdateObject(obj, actionName)
 	if err != nil {
 		metrics.DatabaseErrors.WithLabelValues(actionName).Inc()
 		panic(err)
