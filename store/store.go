@@ -6,7 +6,7 @@ import (
 
 type Store interface {
 	CreateSchema() error
-	CreateObject(req []byte, userID string) (*generated.Object, error)
+	CreateObject(obj *generated.Object) (*generated.Object, error)
 	GetObject(objectID string) (*generated.Object, error)
 	ListObjects(pageSize int) ([]generated.Object, error)
 	UpdateObject(objectID string, action string, req []byte) (*generated.Object, error)

@@ -1,3 +1,5 @@
+// A sample object struct definition. This is expected to be replaced by code generated based on user API definitions.
+
 package generated
 
 type Object struct {

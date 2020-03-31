@@ -13,7 +13,7 @@ const ParseURL = "http://parse:1337/parse/"
 
 const PostgresAddress = "api-postgres:5432"
 
-const CustomLogicUrl = "http://custom-logic:8080/"
+const CustomLogicURL = "http://custom-logic:8080/"
 
 const AuthPath = "/app/auth.json"
 

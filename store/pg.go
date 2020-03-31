@@ -26,27 +26,23 @@ func (s PgStore) CreateSchema() error {
 	return nil
 }
 
-func (s PgStore) CreateObject(req []byte, userID string) (*generated.Object, error) {
-	var dbModel generated.Object
-	err := json.Unmarshal(req, &dbModel)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not unmarshal input as object")
-	}
-
-	dbModel.CreatedBy = userID
-
-	err = s.DB.Insert(&dbModel)
+func (s PgStore) CreateObject(obj *generated.Object) (*generated.Object, error) {
+	err := s.DB.Insert(obj)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to insert into database")
 	}
 
-	return &dbModel, nil
+	return obj, nil
 }
 
+// GetObject gets an object by ID. It returns nil if the object is not found.
 func (s PgStore) GetObject(objectID string) (*generated.Object, error) {
 	object := &generated.Object{ID: objectID}
 	err := s.DB.Select(object)
 	if err != nil {
+		if errors.Is(err, pg.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, err
 	}
 

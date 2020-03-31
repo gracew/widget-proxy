@@ -17,11 +17,9 @@ func TestAuth(t *testing.T) {
 		Type: model.AuthPolicyTypeCreatedBy,
 	}
 	input := model.Auth{
-		ID:                 "id",
-		APIID:              "apiID",
-		AuthenticationType: model.AuthenticationTypeBuiltIn,
-		ReadPolicy:         &createdByAuthPolicy,
-		WritePolicy:        &createdByAuthPolicy,
+		APIID: "apiID",
+		Read:  &createdByAuthPolicy,
+		Write: &createdByAuthPolicy,
 	}
 
 	path, err := writeTmpFile(input, "auth-")
@@ -35,24 +33,20 @@ func TestAuth(t *testing.T) {
 func TestCustomLogic(t *testing.T) {
 	beforeSave := "before"
 	afterSave := "after"
-	customLogic1 := model.CustomLogic{
-		APIID:         "apiID",
-		OperationType: model.OperationTypeCreate,
-		Before:        &beforeSave,
+	customLogic1 := &model.CustomLogic{
+		Before: &beforeSave,
 	}
-	customLogic2 := model.CustomLogic{
-		APIID:         "apiID",
-		OperationType: model.OperationTypeRead,
-		After:         &afterSave,
+	customLogic2 := &model.CustomLogic{
+		After: &afterSave,
 	}
-	input := []model.CustomLogic{customLogic1, customLogic2}
+	input := model.AllCustomLogic{APIID: "apiID", Create: customLogic1, Delete: customLogic2}
 
 	path, err := writeTmpFile(input, "custom-logic-")
 	assert.NoError(t, err)
 
 	output, err := CustomLogic(path)
 	assert.NoError(t, err)
-	assert.Equal(t, input, output)
+	assert.Equal(t, input, *output)
 }
 
 func writeTmpFile(input interface{}, prefix string) (string, error) {

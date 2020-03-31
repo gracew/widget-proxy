@@ -44,7 +44,14 @@ func (h Handlers) CreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// delegate to db
-	res, err := h.Store.CreateObject(bytes, userID)
+	var obj *generated.Object
+	err = json.Unmarshal(bytes, obj)
+	if err != nil {
+		panic(err)
+	}
+	obj.CreatedBy = userID
+
+	res, err := h.Store.CreateObject(obj)
 	if err != nil {
 		metrics.DatabaseErrors.WithLabelValues(metrics.CREATE).Inc()
 		panic(err)
@@ -222,7 +229,7 @@ func applyBeforeCustomLogic(r *http.Request, customLogic *model.CustomLogic, ope
 	}
 
 	start := time.Now()
-	res, err := http.Post(config.CustomLogicUrl+"before"+operation, "application/json", r.Body)
+	res, err := http.Post(config.CustomLogicURL+"before"+operation, "application/json", r.Body)
 	if err != nil {
 		metrics.CustomLogicErrors.WithLabelValues(operation, "before").Inc()
 		return nil, errors.Wrap(err, "request to custom logic endpoint failed")
@@ -253,7 +260,7 @@ func applyAfterCustomLogic(w http.ResponseWriter, input *generated.Object, custo
 	}
 
 	start := time.Now()
-	afterRes, err := http.Post(config.CustomLogicUrl+"after"+operation, "application/json", bytes.NewReader(inputBytes))
+	afterRes, err := http.Post(config.CustomLogicURL+"after"+operation, "application/json", bytes.NewReader(inputBytes))
 	if err != nil {
 		metrics.CustomLogicErrors.WithLabelValues(operation, "after").Inc()
 		return errors.Wrap(err, "request to custom logic endpoint failed")
