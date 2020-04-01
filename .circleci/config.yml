@@ -8,7 +8,7 @@ jobs:
           POSTGRES_PASSWORD: postgres
     steps:
       - checkout
-      - run: go run github.com/99designs/gqlgen
+      - run: go generate ./...
       - run: go get
       - run:
           name: Enforce Go Formatted Code

@@ -27,7 +27,7 @@ type HandlersTestSuite struct {
 }
 
 var auth = model.Auth{
-	Read: &model.AuthPolicy{Type: model.AuthPolicyTypeCreatedBy},
+	Read:   &model.AuthPolicy{Type: model.AuthPolicyTypeCreatedBy},
 	Delete: &model.AuthPolicy{Type: model.AuthPolicyTypeCreatedBy},
 }
 
@@ -131,7 +131,7 @@ func (suite *HandlersTestSuite) TestListPageSizeQuery() {
 	rr := httptest.NewRecorder()
 	req := suite.request(input)
 	q := req.URL.Query()
-    q.Add("pageSize", "50")
+	q.Add("pageSize", "50")
 	req.URL.RawQuery = q.Encode()
 	h.ListHandler(rr, req)
 
@@ -199,7 +199,7 @@ func (suite *HandlersTestSuite) TestDelete() {
 		CustomLogic:       model.AllCustomLogic{},
 		CustomLogicCaller: suite.caller,
 		Authenticator:     suite.authenticator,
-		Auth: auth,
+		Auth:              auth,
 	}
 
 	getOutput := generated.Object{ID: "1", CreatedBy: "userID"}
@@ -219,7 +219,7 @@ func (suite *HandlersTestSuite) TestDeleteCustomLogic() {
 		CustomLogic:       model.AllCustomLogic{Delete: &model.CustomLogic{Before: &customLogic, After: &customLogic}},
 		CustomLogicCaller: suite.caller,
 		Authenticator:     suite.authenticator,
-		Auth: auth,
+		Auth:              auth,
 	}
 
 	getOutput := generated.Object{ID: "1", CreatedBy: "userID"}
