@@ -36,7 +36,7 @@ path. For example, a file `beforecreate.js` or `beforecreate.py` would result in
 
 ## Tests
 
-The tests rely on generated mocks:
+The tests rely on mocks which are generated via:
 ```
 go generate ./...
 ```

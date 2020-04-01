@@ -261,27 +261,6 @@ func (suite *HandlersTestSuite) decode(body io.Reader) generated.Object {
 	return res
 }
 
-/*func TestBeforeCustomLogicNoop2(t *testing.T) {
-	obj := &generated.Object{ID: "id", Test: "test"}
-	bs, err := json.Marshal(obj)
-	assert.NoError(t, err)
-
-	req, err := http.NewRequest("POST", "url", bytes.NewReader((bs)))
-	assert.NoError(t, err)
-
-	res, err := applyBeforeCustomLogic(req, &model.CustomLogic{}, metrics.CREATE)
-	assert.NoError(t, err)
-	assert.Equal(t, obj, res)
-}
-
-func TestBeforeCustomLogic(t *testing.T) {
-	before := "foo"
-	customLogic := &model.CustomLogic{Before: &before}
-	r := &http.Request{}
-	applyBeforeCustomLogic(r, customLogic, metrics.CREATE)
-}
-*/
-
 func TestHandlersTestSuite(t *testing.T) {
 	suite.Run(t, new(HandlersTestSuite))
 }
