@@ -54,7 +54,7 @@ func (suite *HandlersTestSuite) TestCreate() {
 	storeInput := generated.Object{ID: "1", CreatedBy: "userID"}
 	storeOutput := generated.Object{ID: "2"}
 
-	suite.executor.EXPECT().Call(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+	suite.executor.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 	suite.store.EXPECT().CreateObject(&storeInput).Return(&storeOutput, nil)
 
 	rr := httptest.NewRecorder()
@@ -78,11 +78,11 @@ func (suite *HandlersTestSuite) TestCreateCustomLogic() {
 	storeOutput := generated.Object{ID: "3"}
 	afterCustomLogicOutput := generated.Object{ID: "4"}
 
-	suite.executor.EXPECT().Call(gomock.Any(), "before", metrics.CREATE).
+	suite.executor.EXPECT().Execute(gomock.Any(), "before", metrics.CREATE).
 		Times(1).
 		Return(suite.response(beforeCustomLogicOutput), nil)
 	suite.store.EXPECT().CreateObject(&storeInput).Return(&storeOutput, nil)
-	suite.executor.EXPECT().Call(gomock.Any(), "after", metrics.CREATE).
+	suite.executor.EXPECT().Execute(gomock.Any(), "after", metrics.CREATE).
 		Times(1).
 		Return(suite.response(afterCustomLogicOutput), nil)
 
@@ -155,7 +155,7 @@ func (suite *HandlersTestSuite) TestUpdate() {
 	input := generated.Object{ID: "1"}
 	storeOutput := generated.Object{ID: "2"}
 
-	suite.executor.EXPECT().Call(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+	suite.executor.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 	suite.store.EXPECT().UpdateObject(&input, "action").Return(&storeOutput, nil)
 
 	rr := httptest.NewRecorder()
@@ -182,11 +182,11 @@ func (suite *HandlersTestSuite) TestUpdateCustomLogic() {
 	storeOutput := generated.Object{ID: "2"}
 	afterCustomLogicOutput := generated.Object{ID: "3"}
 
-	suite.executor.EXPECT().Call(gomock.Any(), "before", "action").
+	suite.executor.EXPECT().Execute(gomock.Any(), "before", "action").
 		Times(1).
 		Return(suite.response(beforeCustomLogicOutput), nil)
 	suite.store.EXPECT().UpdateObject(&beforeCustomLogicOutput, "action").Return(&storeOutput, nil)
-	suite.executor.EXPECT().Call(gomock.Any(), "after", "action").
+	suite.executor.EXPECT().Execute(gomock.Any(), "after", "action").
 		Times(1).
 		Return(suite.response(afterCustomLogicOutput), nil)
 
@@ -207,7 +207,7 @@ func (suite *HandlersTestSuite) TestDelete() {
 
 	getOutput := generated.Object{ID: "1", CreatedBy: "userID"}
 
-	suite.executor.EXPECT().Call(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+	suite.executor.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 	suite.store.EXPECT().GetObject("1").Return(&getOutput, nil)
 	suite.store.EXPECT().DeleteObject("1").Return(nil)
 
@@ -229,11 +229,11 @@ func (suite *HandlersTestSuite) TestDeleteCustomLogic() {
 	afterCustomLogicOutput := generated.Object{ID: "2"}
 
 	suite.store.EXPECT().GetObject("1").Return(&getOutput, nil)
-	suite.executor.EXPECT().Call(gomock.Any(), "before", metrics.DELETE).
+	suite.executor.EXPECT().Execute(gomock.Any(), "before", metrics.DELETE).
 		Times(1).
 		Return(suite.response(getOutput), nil)
 	suite.store.EXPECT().DeleteObject("1").Return(nil)
-	suite.executor.EXPECT().Call(gomock.Any(), "after", metrics.DELETE).
+	suite.executor.EXPECT().Execute(gomock.Any(), "after", metrics.DELETE).
 		Times(1).
 		Return(suite.response(afterCustomLogicOutput), nil)
 
