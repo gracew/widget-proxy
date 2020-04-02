@@ -2,13 +2,13 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.13
+      - image: golang:1.13
       - image: postgres:11-alpine
         environment:
           POSTGRES_PASSWORD: postgres
     steps:
       - checkout
-      - run: go get ./...
+      - run: go get -t ./...
       - run: go get github.com/golang/mock/mockgen@v1.4.3
       - run: go generate ./...
       - run:
