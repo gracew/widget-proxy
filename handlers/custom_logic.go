@@ -11,15 +11,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-type CustomLogicCaller interface {
-	Call(reader io.Reader, when string, operation string) (*http.Response, error)
+type CustomLogicExecutor interface {
+	Execute(reader io.Reader, when string, operation string) (*http.Response, error)
 }
 
-type HTTPCustomLogicCaller struct {
+type RemoteCustomLogicExecutor struct {
 	URL string
 }
 
-func (c HTTPCustomLogicCaller) Call(reader io.Reader, when string, operation string) (*http.Response, error) {
+func (c RemoteCustomLogicExecutor) Execute(reader io.Reader, when string, operation string) (*http.Response, error) {
 	start := time.Now()
 	res, err := http.Post(c.URL+when+operation, "application/json", reader)
 	if err != nil {

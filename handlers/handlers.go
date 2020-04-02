@@ -17,11 +17,11 @@ import (
 )
 
 type Handlers struct {
-	Store             store.Store
-	Auth              model.Auth
-	Authenticator     user.Authenticator
-	CustomLogic       model.AllCustomLogic
-	CustomLogicCaller CustomLogicCaller
+	Store               store.Store
+	Auth                model.Auth
+	Authenticator       user.Authenticator
+	CustomLogic         model.AllCustomLogic
+	CustomLogicExecutor CustomLogicExecutor
 }
 
 func (h Handlers) CreateHandler(w http.ResponseWriter, r *http.Request) {
@@ -213,7 +213,7 @@ func (h Handlers) applyBeforeCustomLogic(r *http.Request, customLogic *model.Cus
 		return &obj, nil
 	}
 
-	res, err := h.CustomLogicCaller.Call(r.Body, "before", operation)
+	res, err := h.CustomLogicExecutor.Execute(r.Body, "before", operation)
 	if err != nil {
 		return nil, errors.Wrap(err, "request to custom logic endpoint failed")
 	}
@@ -240,7 +240,7 @@ func (h Handlers) applyAfterCustomLogic(w http.ResponseWriter, input *generated.
 		return errors.Wrap(err, "could not marshal custom logic input")
 	}
 
-	res, err := h.CustomLogicCaller.Call(bytes.NewReader(inputBytes), "after", operation)
+	res, err := h.CustomLogicExecutor.Execute(bytes.NewReader(inputBytes), "after", operation)
 	if err != nil {
 		errors.Wrap(err, "request to custom logic endpoint failed")
 	}
