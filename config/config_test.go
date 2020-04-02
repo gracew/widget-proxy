@@ -19,7 +19,6 @@ func TestAuth(t *testing.T) {
 	input := model.Auth{
 		APIID: "apiID",
 		Read:  &createdByAuthPolicy,
-		Write: &createdByAuthPolicy,
 	}
 
 	path, err := writeTmpFile(input, "auth-")
