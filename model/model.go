@@ -22,10 +22,10 @@ type ActionDefinition struct {
 }
 
 type Auth struct {
-	APIID  string      `json:"apiID"`
-	Read   *AuthPolicy `json:"read"`
-	Write  *AuthPolicy `json:"write"`
-	Delete *AuthPolicy `json:"delete"`
+	APIID  string                 `json:"apiID"`
+	Read   *AuthPolicy            `json:"read"`
+	Update map[string]*AuthPolicy `json:"update"`
+	Delete *AuthPolicy            `json:"delete"`
 }
 
 type AuthPolicy struct {

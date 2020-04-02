@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -37,7 +38,7 @@ func (h Handlers) CreateHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	obj, err := h.applyBeforeCustomLogic(r, h.CustomLogic.Create, metrics.CREATE)
+	obj, err := h.applyBeforeCustomLogic(r.Body, h.CustomLogic.Create, metrics.CREATE)
 	if err != nil {
 		panic(err)
 	}
@@ -79,7 +80,7 @@ func (h Handlers) ReadHandler(w http.ResponseWriter, r *http.Request) {
 
 	if h.Auth.Read.Type == model.AuthPolicyTypeCreatedBy {
 		if userID != (*res).CreatedBy {
-			json.NewEncoder(w).Encode(&unauthorized{Message: "unauthorized"})
+			h.unauthorizedResponse(w)
 			return
 		}
 	}
@@ -129,7 +130,6 @@ func (h Handlers) ListHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(filtered)
 }
 
-// TODO(gracew): authz
 func (h Handlers) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "*")
@@ -137,17 +137,32 @@ func (h Handlers) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vars := mux.Vars(r)
-	actionName := vars["action"]
+	// get the userId
+	userID, err := h.Authenticator.GetUserId(r.Header)
+	if err != nil {
+		panic(err)
+	}
 
-	obj, err := h.applyBeforeCustomLogic(r, h.CustomLogic.Update[actionName], actionName)
+	// fetch object first, and enforce authz
+	vars := mux.Vars(r)
+	id := vars["id"]
+	actionName := vars["action"]
+	res, err := h.Store.GetObject(id)
+	if h.Auth.Update[actionName].Type == model.AuthPolicyTypeCreatedBy {
+		if userID != (*res).CreatedBy {
+			h.unauthorizedResponse(w)
+			return
+		}
+	}
+
+	obj, err := h.applyBeforeCustomLogic(r.Body, h.CustomLogic.Update[actionName], actionName)
 	if err != nil {
 		panic(err)
 	}
 
 	// delegate to db
-	obj.ID = vars["id"]
-	res, err := h.Store.UpdateObject(obj, actionName)
+	obj.ID = id
+	res, err = h.Store.UpdateObject(obj, actionName)
 	if err != nil {
 		metrics.DatabaseErrors.WithLabelValues(actionName).Inc()
 		panic(err)
@@ -174,15 +189,20 @@ func (h Handlers) DeleteHandler(w http.ResponseWriter, r *http.Request) {
 
 	// fetch object first, and enforce authz
 	vars := mux.Vars(r)
-	res, err := h.Store.GetObject(vars["id"])
+	obj, err := h.Store.GetObject(vars["id"])
 	if h.Auth.Delete.Type == model.AuthPolicyTypeCreatedBy {
-		if userID != (*res).CreatedBy {
-			json.NewEncoder(w).Encode(&unauthorized{Message: "unauthorized"})
+		if userID != (*obj).CreatedBy {
+			h.unauthorizedResponse(w)
 			return
 		}
 	}
 
-	_, err = h.applyBeforeCustomLogic(r, h.CustomLogic.Delete, metrics.DELETE)
+	objBytes, err := json.Marshal(obj)
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = h.applyBeforeCustomLogic(bytes.NewReader(objBytes), h.CustomLogic.Delete, metrics.DELETE)
 	if err != nil {
 		panic(err)
 	}
@@ -193,27 +213,33 @@ func (h Handlers) DeleteHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	err = h.applyAfterCustomLogic(w, res, h.CustomLogic.Delete, metrics.DELETE)
+	err = h.applyAfterCustomLogic(w, obj, h.CustomLogic.Delete, metrics.DELETE)
 	if err != nil {
 		panic(err)
 	}
 }
 
-type unauthorized struct {
+type errorResponse struct {
 	Message string `json:"message"`
 }
 
-func (h Handlers) applyBeforeCustomLogic(r *http.Request, customLogic *model.CustomLogic, operation string) (*generated.Object, error) {
+func (h Handlers) unauthorizedResponse(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusForbidden)
+	json.NewEncoder(w).Encode(&errorResponse{Message: "unauthorized"})
+
+}
+
+func (h Handlers) applyBeforeCustomLogic(reader io.Reader, customLogic *model.CustomLogic, operation string) (*generated.Object, error) {
 	var obj generated.Object
 	if customLogic == nil || customLogic.Before == nil {
-		err := json.NewDecoder(r.Body).Decode(&obj)
+		err := json.NewDecoder(reader).Decode(&obj)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not read request body")
 		}
 		return &obj, nil
 	}
 
-	res, err := h.CustomLogicExecutor.Execute(r.Body, "before", operation)
+	res, err := h.CustomLogicExecutor.Execute(reader, "before", operation)
 	if err != nil {
 		return nil, errors.Wrap(err, "request to custom logic endpoint failed")
 	}
