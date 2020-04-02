@@ -44,10 +44,10 @@ func main() {
 
 	r := mux.NewRouter()
 	h := handlers.Handlers{
-		Store: s,
-		Auth: *auth,
-		Authenticator: user.ParseAuthenticator{},
-		CustomLogic: *customLogic,
+		Store:             s,
+		Auth:              *auth,
+		Authenticator:     user.ParseAuthenticator{},
+		CustomLogic:       *customLogic,
 		CustomLogicCaller: handlers.HTTPCustomLogicCaller{URL: config.CustomLogicURL},
 	}
 	r.HandleFunc("/", instrumentedHandler(h.CreateHandler, metrics.CREATE)).Methods("POST", "OPTIONS")

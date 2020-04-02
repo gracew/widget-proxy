@@ -15,7 +15,7 @@ type Authenticator interface {
 	GetUserId(header http.Header) (string, error)
 }
 
-type ParseAuthenticator struct {}
+type ParseAuthenticator struct{}
 
 type CreateRes struct {
 	CreatedAt string `json:"createdAt"`
