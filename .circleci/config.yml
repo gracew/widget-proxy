@@ -8,8 +8,8 @@ jobs:
           POSTGRES_PASSWORD: postgres
     steps:
       - checkout
-      - run: go generate ./...
       - run: go get
+      - run: go generate ./...
       - run:
           name: Enforce Go Formatted Code
           # https://circleci.com/blog/enforce-build-standards/

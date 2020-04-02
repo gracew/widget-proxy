@@ -33,10 +33,11 @@ var auth = model.Auth{
 
 func (suite *HandlersTestSuite) SetupTest() {
 	mockCtrl := gomock.NewController(suite.T())
+	defer mockCtrl.Finish()
 	suite.store = mocks.NewMockStore(mockCtrl)
 	suite.caller = mocks.NewMockCustomLogicCaller(mockCtrl)
 	suite.authenticator = mocks.NewMockAuthenticator(mockCtrl)
-	suite.authenticator.EXPECT().GetUserId(gomock.Any()).Return("userID", nil)
+	suite.authenticator.EXPECT().GetUserId(gomock.Any()).Return("userID", nil).AnyTimes()
 }
 
 func (suite *HandlersTestSuite) TestCreate() {
@@ -239,7 +240,7 @@ func (suite *HandlersTestSuite) TestDeleteCustomLogic() {
 }
 
 func (suite *HandlersTestSuite) request(obj generated.Object) *http.Request {
-	req, err := http.NewRequest("POST", "url", suite.encode(obj))
+	req, err := http.NewRequest("POST", "", suite.encode(obj))
 	assert.NoError(suite.T(), err)
 	return req
 }
