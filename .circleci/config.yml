@@ -9,7 +9,6 @@ jobs:
     steps:
       - checkout
       - run: go get -t ./...
-      - run: go get github.com/golang/mock/mockgen@v1.4.3
       - run: go generate ./...
       - run:
           name: Enforce Go Formatted Code
