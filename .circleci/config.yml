@@ -8,7 +8,7 @@ jobs:
           POSTGRES_PASSWORD: postgres
     steps:
       - checkout
-      - run: go get
+      - run: go get ./...
       - run: go get github.com/golang/mock/mockgen
       - run: go generate ./...
       - run:
