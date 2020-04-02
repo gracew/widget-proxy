@@ -231,6 +231,8 @@ func (suite *HandlersTestSuite) TestDelete() {
 	req, err := http.NewRequest("DELETE", "", nil)
 	assert.NoError(suite.T(), err)
 	h.DeleteHandler(rr, mux.SetURLVars(req, map[string]string{"id": "1"}))
+
+	assert.Equal(suite.T(), http.StatusNoContent, rr.Result().StatusCode)
 }
 
 func (suite *HandlersTestSuite) TestDeleteUnauthorized() {
@@ -266,6 +268,9 @@ func (suite *HandlersTestSuite) TestDeleteCustomLogic() {
 	req, err := http.NewRequest("DELETE", "", nil)
 	assert.NoError(suite.T(), err)
 	h.DeleteHandler(rr, mux.SetURLVars(req, map[string]string{"id": "1"}))
+
+	assert.Equal(suite.T(), http.StatusOK, rr.Result().StatusCode)
+	assert.Equal(suite.T(), afterCustomLogicOutput, suite.decode(rr.Body))
 }
 
 func (suite *HandlersTestSuite) request(obj generated.Object) *http.Request {
