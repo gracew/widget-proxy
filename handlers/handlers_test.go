@@ -28,13 +28,6 @@ type HandlersTestSuite struct {
 	authenticator *mocks.MockAuthenticator
 }
 
-var auth = model.Auth{
-	Read: &model.AuthPolicy{Type: model.AuthPolicyTypeCreatedBy},
-	Update: map[string]*model.AuthPolicy{
-		"action": &model.AuthPolicy{Type: model.AuthPolicyTypeCreatedBy},
-	},
-	Delete: &model.AuthPolicy{Type: model.AuthPolicyTypeCreatedBy},
-}
 var h Handlers
 
 func (suite *HandlersTestSuite) SetupTest() {
@@ -49,7 +42,13 @@ func (suite *HandlersTestSuite) SetupTest() {
 		CustomLogic:         model.AllCustomLogic{},
 		CustomLogicExecutor: suite.executor,
 		Authenticator:       suite.authenticator,
-		Auth:                auth,
+		Auth: model.Auth{
+			Read: &model.AuthPolicy{Type: model.AuthPolicyTypeCreatedBy},
+			Update: map[string]*model.AuthPolicy{
+				"action": &model.AuthPolicy{Type: model.AuthPolicyTypeCreatedBy},
+			},
+			Delete: &model.AuthPolicy{Type: model.AuthPolicyTypeCreatedBy},
+		},
 	}
 }
 
@@ -150,7 +149,6 @@ func (suite *HandlersTestSuite) TestListPageSizeQuery() {
 
 func (suite *HandlersTestSuite) TestListUnauthorized() {
 	storeOutput := []generated.Object{generated.Object{ID: "1", CreatedBy: "anotherUserID"}}
-
 	suite.store.EXPECT().ListObjects(100).Return(storeOutput, nil)
 
 	rr := httptest.NewRecorder()
