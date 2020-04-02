@@ -12,6 +12,7 @@ import (
 	"github.com/gracew/widget-proxy/handlers"
 	"github.com/gracew/widget-proxy/metrics"
 	"github.com/gracew/widget-proxy/store"
+	"github.com/gracew/widget-proxy/user"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -42,7 +43,13 @@ func main() {
 	}
 
 	r := mux.NewRouter()
-	h := handlers.Handlers{Store: s, CustomLogic: customLogic, Auth: auth}
+	h := handlers.Handlers{
+		Store:               s,
+		Auth:                *auth,
+		Authenticator:       user.ParseAuthenticator{},
+		CustomLogic:         *customLogic,
+		CustomLogicExecutor: handlers.RemoteCustomLogicExecutor{URL: config.CustomLogicURL},
+	}
 	r.HandleFunc("/", instrumentedHandler(h.CreateHandler, metrics.CREATE)).Methods("POST", "OPTIONS")
 	r.HandleFunc("/{id}", instrumentedHandler(h.ReadHandler, metrics.READ)).Methods("GET", "OPTIONS")
 	r.HandleFunc("/{id}/{action}", updateInstrumentedHandler(h.UpdateHandler)).Methods("POST", "OPTIONS")

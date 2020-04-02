@@ -1,5 +1,7 @@
 package store
 
+//go:generate $GOPATH/bin/mockgen -source=$GOFILE -destination=$PWD/mocks/$GOFILE -package=mocks
+
 import (
 	"github.com/gracew/widget-proxy/generated"
 )

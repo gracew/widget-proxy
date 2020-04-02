@@ -8,8 +8,9 @@ jobs:
           POSTGRES_PASSWORD: postgres
     steps:
       - checkout
-      - run: go run github.com/99designs/gqlgen
-      - run: go get
+      - run: go get -t ./...
+      - run: go get github.com/golang/mock/mockgen@v1.4.3
+      - run: go generate ./...
       - run:
           name: Enforce Go Formatted Code
           # https://circleci.com/blog/enforce-build-standards/

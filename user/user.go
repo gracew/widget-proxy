@@ -1,5 +1,7 @@
 package user
 
+//go:generate $GOPATH/bin/mockgen -source=$GOFILE -destination=$PWD/mocks/$GOFILE -package=mocks
+
 import (
 	"encoding/json"
 	"net/http"
@@ -9,12 +11,19 @@ import (
 	"github.com/pkg/errors"
 )
 
+type Authenticator interface {
+	GetUserId(header http.Header) (string, error)
+}
+
+type ParseAuthenticator struct{}
+
 type CreateRes struct {
 	CreatedAt string `json:"createdAt"`
 	ObjectID  string `json:"objectId"`
 }
 
-func GetUserId(parseToken string) (string, error) {
+func (a ParseAuthenticator) GetUserId(header http.Header) (string, error) {
+	parseToken := header["X-Parse-Session-Token"][0]
 	parseURL, err := parseURL("users/me")
 	if err != nil {
 		return "", err
