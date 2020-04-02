@@ -254,6 +254,11 @@ func (h Handlers) applyBeforeCustomLogic(reader io.Reader, customLogic *model.Cu
 
 func (h Handlers) applyAfterCustomLogic(w http.ResponseWriter, input *generated.Object, customLogic *model.CustomLogic, operation string) error {
 	if customLogic == nil || customLogic.After == nil {
+		if operation == metrics.DELETE {
+			w.WriteHeader(http.StatusNoContent)
+			return nil
+		}
+
 		err := json.NewEncoder(w).Encode(input)
 		if err != nil {
 			return errors.Wrap(err, "could not encode response")
