@@ -74,7 +74,7 @@ func (suite *PgTestSuite) TestList() {
 	_, err = suite.s.CreateObject(obj2)
 	assert.NoError(suite.T(), err)
 
-	res, err := suite.s.ListObjects(100)
+	res, err := suite.s.ListObjects(100, nil)
 	assert.NoError(suite.T(), err)
 	ids := []string{}
 	for _, o := range res {
@@ -82,6 +82,25 @@ func (suite *PgTestSuite) TestList() {
 	}
 	assert.Contains(suite.T(), ids, obj1.ID)
 	assert.Contains(suite.T(), ids, obj2.ID)
+}
+
+func (suite *PgTestSuite) TestListFilter() {
+	obj1 := &generated.Object{Test: "test1", CreatedBy: "userID"}
+	_, err := suite.s.CreateObject(obj1)
+	assert.NoError(suite.T(), err)
+
+	obj2 := &generated.Object{Test: "test2", CreatedBy: "userID"}
+	_, err = suite.s.CreateObject(obj2)
+	assert.NoError(suite.T(), err)
+
+	res, err := suite.s.ListObjects(100, &Filter{Field: "test", Value: "test1"})
+	assert.NoError(suite.T(), err)
+	ids := []string{}
+	for _, o := range res {
+		ids = append(ids, o.ID)
+	}
+	assert.Contains(suite.T(), ids, obj1.ID)
+	assert.NotContains(suite.T(), ids, obj2.ID)
 }
 
 func (suite *PgTestSuite) TestUpdate() {

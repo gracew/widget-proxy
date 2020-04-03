@@ -17,6 +17,7 @@ import (
 	"github.com/gracew/widget-proxy/metrics"
 	"github.com/gracew/widget-proxy/mocks"
 	"github.com/gracew/widget-proxy/model"
+	"github.com/gracew/widget-proxy/store"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -116,7 +117,7 @@ func (suite *HandlersTestSuite) TestReadUnauthorized() {
 
 func (suite *HandlersTestSuite) TestListDefaultPageSize() {
 	storeOutput := []generated.Object{generated.Object{ID: "1", CreatedBy: "userID"}}
-	suite.store.EXPECT().ListObjects(100).Return(storeOutput, nil)
+	suite.store.EXPECT().ListObjects(100, nil).Return(storeOutput, nil)
 
 	rr := httptest.NewRecorder()
 	req, err := http.NewRequest("GET", "", nil)
@@ -131,7 +132,7 @@ func (suite *HandlersTestSuite) TestListDefaultPageSize() {
 
 func (suite *HandlersTestSuite) TestListPageSizeQuery() {
 	storeOutput := []generated.Object{generated.Object{ID: "1", CreatedBy: "userID"}}
-	suite.store.EXPECT().ListObjects(50).Return(storeOutput, nil)
+	suite.store.EXPECT().ListObjects(50, nil).Return(storeOutput, nil)
 
 	rr := httptest.NewRecorder()
 	req, err := http.NewRequest("GET", "", nil)
@@ -149,7 +150,7 @@ func (suite *HandlersTestSuite) TestListPageSizeQuery() {
 
 func (suite *HandlersTestSuite) TestListUnauthorized() {
 	storeOutput := []generated.Object{generated.Object{ID: "1", CreatedBy: "anotherUserID"}}
-	suite.store.EXPECT().ListObjects(100).Return(storeOutput, nil)
+	suite.store.EXPECT().ListObjects(100, nil).Return(storeOutput, nil)
 
 	rr := httptest.NewRecorder()
 	req, err := http.NewRequest("GET", "", nil)
@@ -161,6 +162,25 @@ func (suite *HandlersTestSuite) TestListUnauthorized() {
 	err = json.NewDecoder(rr.Body).Decode(&res)
 	assert.NoError(suite.T(), err)
 	assert.Empty(suite.T(), res)
+}
+
+func (suite *HandlersTestSuite) TestListFilter() {
+	storeOutput := []generated.Object{generated.Object{ID: "1", CreatedBy: "userID"}}
+	suite.store.EXPECT().ListObjects(100, &store.Filter{Field: "key", Value: "value"}).Return(storeOutput, nil)
+
+	rr := httptest.NewRecorder()
+	req, err := http.NewRequest("GET", "", nil)
+	assert.NoError(suite.T(), err)
+	q := req.URL.Query()
+	q.Add("key", "value")
+	q.Add("key", "anotherValue")
+	req.URL.RawQuery = q.Encode()
+	h.ListHandler(rr, req)
+
+	var res []generated.Object
+	err = json.NewDecoder(rr.Body).Decode(&res)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), storeOutput, res)
 }
 
 func (suite *HandlersTestSuite) TestUpdate() {

@@ -57,14 +57,31 @@ func (s PgStore) GetObject(objectID string) (*generated.Object, error) {
 }
 
 // ListObjects retrieves the specified number of objects, ordered by created_at DESC.
-func (s PgStore) ListObjects(pageSize int) ([]generated.Object, error) {
+func (s PgStore) ListObjects(pageSize int, filter *Filter) ([]generated.Object, error) {
+	if filter != nil && !s.validFilter(*filter) {
+		return nil, errors.New("invalid filter field: " + filter.Field)
+	}
+
 	var models []generated.Object
-	err := s.DB.Model(&models).Order("created_at DESC").Limit(pageSize).Select()
+	m := s.DB.Model(&models).Order("created_at DESC")
+	if filter != nil {
+		m.Where(underscore(filter.Field) + " = ?", filter.Value)
+	}
+	err := m.Limit(pageSize).Select()
 	if err != nil {
 		return nil, err
 	}
 
 	return models, nil
+}
+
+func (s PgStore) validFilter(filter Filter) bool {
+	for _, f := range s.API.Operations.List.Filter {
+		if f == filter.Field {
+			return true
+		}
+	}
+	return false
 }
 
 // UpdateObject updates the specified object in the database.
