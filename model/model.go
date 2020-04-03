@@ -9,7 +9,43 @@ type API struct {
 }
 
 type OperationDefinition struct {
+	List   *ListDefinition   `json:"list"`
 	Update *UpdateDefinition `json:"update"`
+}
+
+type ListDefinition struct {
+	Enabled bool             `json:"enabled"`
+	Sort    []SortDefinition `json:"sort"`
+	Filter  []string         `json:"filter"`
+}
+
+type SortDefinition struct {
+	Field string    `json:"field"`
+	Order SortOrder `json:"order"`
+}
+
+type SortOrder string
+
+const (
+	SortOrderAsc  SortOrder = "ASC"
+	SortOrderDesc SortOrder = "DESC"
+)
+
+var AllSortOrder = []SortOrder{
+	SortOrderAsc,
+	SortOrderDesc,
+}
+
+func (e SortOrder) IsValid() bool {
+	switch e {
+	case SortOrderAsc, SortOrderDesc:
+		return true
+	}
+	return false
+}
+
+func (e SortOrder) String() string {
+	return string(e)
 }
 
 type UpdateDefinition struct {

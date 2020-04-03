@@ -38,10 +38,11 @@ func (s InstrumentedStore) GetObject(objectID string) (*generated.Object, error)
 }
 
 // ListObjects delegates to another Store instance and records the duration of the operation.
-func (s InstrumentedStore) ListObjects(pageSize int) ([]generated.Object, error) {
+func (s InstrumentedStore) ListObjects(pageSize int, filter *Filter) ([]generated.Object, error) {
 	start := time.Now()
-	res, err := s.Delegate.ListObjects(pageSize)
+	res, err := s.Delegate.ListObjects(pageSize, filter)
 	end := time.Now()
+	// TODO(gracew): include pageSize and filter info in metric labels
 	metrics.DatabaseSummary.WithLabelValues(metrics.LIST).Observe(end.Sub(start).Seconds())
 	return res, err
 }

@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -103,7 +104,8 @@ func (h Handlers) ListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// delegate to db
-	pageSizes, ok := r.URL.Query()["pageSize"]
+	query := r.URL.Query()
+	pageSizes, ok := query["pageSize"]
 	pageSize := 100
 	if ok && len(pageSizes[0]) >= 1 {
 		pageSize, err = strconv.Atoi(pageSizes[0])
@@ -111,7 +113,8 @@ func (h Handlers) ListHandler(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 	}
-	res, err := h.Store.ListObjects(pageSize)
+
+	res, err := h.Store.ListObjects(pageSize, filter(query))
 	if err != nil {
 		metrics.DatabaseErrors.WithLabelValues(metrics.LIST).Inc()
 		panic(err)
@@ -128,6 +131,15 @@ func (h Handlers) ListHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO(gracew): support other authz policies
 
 	json.NewEncoder(w).Encode(filtered)
+}
+
+func filter(query url.Values) *store.Filter {
+	for k, values := range query {
+		if k != "pageSize" {
+			return &store.Filter{Field: k, Value: values[0]}
+		}
+	}
+	return nil
 }
 
 func (h Handlers) UpdateHandler(w http.ResponseWriter, r *http.Request) {
