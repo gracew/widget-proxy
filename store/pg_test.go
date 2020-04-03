@@ -29,9 +29,12 @@ func (suite *PgTestSuite) SetupTest() {
 		DB: db,
 		API: model.API{
 			Operations: &model.OperationDefinition{
+				List: &model.ListDefinition{
+					Filter: []string{"test"},
+				},
 				Update: &model.UpdateDefinition{
 					Actions: []model.ActionDefinition{
-						model.ActionDefinition{Name: "action", Fields: []string{"Test"}},
+						model.ActionDefinition{Name: "action", Fields: []string{"test"}},
 					},
 				},
 			},
