@@ -65,7 +65,7 @@ func (s PgStore) ListObjects(pageSize int, filter *Filter) ([]generated.Object, 
 	var models []generated.Object
 	m := s.DB.Model(&models).Order("created_at DESC")
 	if filter != nil {
-		m.Where(underscore(filter.Field) + " = ?", filter.Value)
+		m.Where(underscore(filter.Field)+" = ?", filter.Value)
 	}
 	err := m.Limit(pageSize).Select()
 	if err != nil {
